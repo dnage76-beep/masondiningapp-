@@ -30,10 +30,11 @@ def fetch_menus() -> dict:
     """
     Fetch Lunch and Dinner menus for all three dining halls,
     returning only the highlighted protein stations per hall.
-    Returns {"date": "YYYY-MM-DD", "menus": {hall: {period: [categories]}}}
+    Returns {"date": "YYYY-MM-DD", "menus": {hall: {period: [categories]}}, "errors": []}
     """
     today = datetime.date.today().strftime("%Y-%m-%d")
     results: dict = {}
+    errors = []
 
     for name, loc_id in LOCATION_IDS.items():
         results[name] = {}
@@ -41,9 +42,9 @@ def fetch_menus() -> dict:
             periods_url = (
                 f"https://apiv4.dineoncampus.com/locations/{loc_id}/periods/?date={today}"
             )
-            res = requests.get(periods_url, impersonate="chrome110", timeout=10)
+            res = requests.get(periods_url, impersonate="chrome110", timeout=15)
             if res.status_code != 200:
-                print(f"[scraper] Failed to get periods for {name}: HTTP {res.status_code}")
+                errors.append(f"{name} periods HTTP {res.status_code}: {res.text[:100]}")
                 continue
 
             periods = res.json().get("periods", [])
