@@ -60,7 +60,7 @@ def fetch_menus() -> dict:
                     f"https://apiv4.dineoncampus.com/locations/{loc_id}/menu"
                     f"?date={today}&period={period_id}"
                 )
-                m_res = scraper.get(menu_url, timeout=10)
+                m_res = requests.get(menu_url, impersonate="chrome110", timeout=15)
                 if m_res.status_code != 200:
                     continue
 
