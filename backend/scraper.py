@@ -1,4 +1,4 @@
-import cloudscraper
+from curl_cffi import requests
 import datetime
 import traceback
 
@@ -32,9 +32,6 @@ def fetch_menus() -> dict:
     returning only the highlighted protein stations per hall.
     Returns {"date": "YYYY-MM-DD", "menus": {hall: {period: [categories]}}}
     """
-    scraper = cloudscraper.create_scraper(
-        browser={"browser": "chrome", "platform": "darwin", "mobile": False}
-    )
     today = datetime.date.today().strftime("%Y-%m-%d")
     results: dict = {}
 
@@ -44,7 +41,7 @@ def fetch_menus() -> dict:
             periods_url = (
                 f"https://apiv4.dineoncampus.com/locations/{loc_id}/periods/?date={today}"
             )
-            res = scraper.get(periods_url, timeout=10)
+            res = requests.get(periods_url, impersonate="chrome110", timeout=10)
             if res.status_code != 200:
                 print(f"[scraper] Failed to get periods for {name}: HTTP {res.status_code}")
                 continue
