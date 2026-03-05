@@ -57,7 +57,14 @@ def save_emails(emails: list) -> None:
 def api_menus():
     try:
         data = fetch_menus()
-        data["recommendation"] = generate_recommendation(data["menus"])
+        # Create final response object
+        response_data = {
+            "date": data.get("date"),
+            "menus": data.get("menus", {}),
+            "errors": data.get("errors", []),
+        }
+        response_data["recommendation"] = generate_recommendation(data.get("menus", {}))
+        return jsonify(response_data)
         return jsonify(data)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
