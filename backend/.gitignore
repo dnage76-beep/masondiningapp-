@@ -1,0 +1,8 @@
+.env
+__pycache__/
+venv/
+*.pyc
+test_*.py
+debug_*
+downloaded_files/
+test_*.json
