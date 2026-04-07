@@ -31,7 +31,9 @@ if _prod_origin:
 
 CORS(app, origins=_allowed_origins)
 
-EMAILS_FILE = os.path.join(os.path.dirname(__file__), "emails.json")
+EMAILS_FILE = os.environ.get(
+    "EMAILS_FILE", os.path.join(os.path.dirname(__file__), "emails.json")
+)
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────

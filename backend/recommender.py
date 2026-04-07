@@ -38,7 +38,7 @@ def _fallback_recommendation(menus: dict) -> dict:
         )
         counts[hall] = total
 
-    best = max(counts, key=counts.get) if counts else list(menus.keys())[0]
+    best = max(counts, key=lambda k: counts[k]) if counts else list(menus.keys())[0]
     highlight_dishes = _pick_highlights(menus)
     return {
         "hall": best,

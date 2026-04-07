@@ -33,7 +33,7 @@ def fetch_menus() -> dict:
     Returns {"date": "YYYY-MM-DD", "menus": {hall: {period: [categories]}}, "errors": []}
     """
     today = datetime.date.today().strftime("%Y-%m-%d")
-    results: dict = {}
+    results = {}
     errors = []
 
     for name, loc_id in LOCATION_IDS.items():
@@ -72,7 +72,7 @@ def fetch_menus() -> dict:
                     if is_allowed_station(name, cat.get("name", ""))
                 ]
                 print(f"[scraper] {name}/{period_name}: {len(categories)} stations → kept {len(kept)}")
-                results[name][period_name] = kept
+                results[name].update({period_name: kept})
 
         except Exception:
             print(f"[scraper] Error fetching {name}:")
