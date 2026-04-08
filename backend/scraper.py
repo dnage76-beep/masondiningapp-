@@ -10,12 +10,12 @@ LOCATION_IDS = {
 
 ALLOWED_MEALS = {"Lunch", "Dinner"}
 
-# Per-hall whitelist — only stations whose name contains one of these keywords
+# Per-hall whitelist -- only stations whose name contains one of these keywords
 # (case-insensitive) will be included in the results.
 HALL_STATION_WHITELIST: dict[str, set[str]] = {
-    "Ike's":     {"heart of the house", "flips"},
-    "Southside": {"mason manor"},
-    "The Globe": {"cultural crossroads"},
+    "Ike's":     {"heart of the house", "flips", "soup bowl", "united table"},
+    "Southside": {"mason manor", "patriot pit", "soup bowl"},
+    "The Globe": {"cultural crossroads", "soup"},
 }
 
 
