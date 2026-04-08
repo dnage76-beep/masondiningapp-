@@ -147,8 +147,8 @@ function getVibeMessage() {
         return { text: msg, type: 'night' };
     }
 
-    // Late night: 9pm - 2am
-    if (h >= 21 || h < 2) {
+    // Late night: 10pm - 2am
+    if (h >= 22 || h < 2) {
         const msg = LATE_NIGHT_MESSAGES[Math.floor(Math.random() * LATE_NIGHT_MESSAGES.length)];
         return { text: msg, type: 'night' };
     }
@@ -284,23 +284,36 @@ function getMealInfo() {
     const now = new Date();
     const h = now.getHours();
     const m = now.getMinutes();
+    const t = h * 60 + m; // minutes since midnight
 
-    if (h < 11) {
-        const mins = (11 - h - 1) * 60 + (60 - m);
-        return { label: `Lunch opens in ${Math.floor(mins / 60)}h ${mins % 60}m`, status: 'upcoming', period: 'Lunch' };
-    } else if (h < 17) {
-        const mins = (17 - h - 1) * 60 + (60 - m);
-        return { label: `Lunch closes in ${Math.floor(mins / 60)}h ${mins % 60}m`, status: 'active', period: 'Lunch' };
-    } else if (h < 21) {
-        const mins = (21 - h - 1) * 60 + (60 - m);
-        return { label: `Dinner closes in ${Math.floor(mins / 60)}h ${mins % 60}m`, status: 'active', period: 'Dinner' };
+    // GMU dining hours (approx):
+    // Breakfast: 7:00 - 10:30
+    // Lunch: 11:00 - 17:00 (5pm)
+    // Dinner: 17:00 - 22:00 (10pm)
+    // Late Night (Ike's only): 22:00 - 01:00
+
+    if (t < 420) { // before 7am
+        const mins = 420 - t;
+        return { label: `Breakfast opens in ${Math.floor(mins / 60)}h ${mins % 60}m`, status: 'upcoming', period: 'Lunch' };
+    } else if (t < 630) { // 7am - 10:30am
+        const mins = 630 - t;
+        return { label: `Breakfast until ${mins > 60 ? Math.floor(mins / 60) + 'h ' : ''}${mins % 60}m`, status: 'active', period: 'Lunch' };
+    } else if (t < 660) { // 10:30 - 11am
+        const mins = 660 - t;
+        return { label: `Lunch opens in ${mins}m`, status: 'upcoming', period: 'Lunch' };
+    } else if (t < 1020) { // 11am - 5pm
+        const mins = 1020 - t;
+        return { label: `Lunch until ${Math.floor(mins / 60)}h ${mins % 60}m`, status: 'active', period: 'Lunch' };
+    } else if (t < 1320) { // 5pm - 10pm
+        const mins = 1320 - t;
+        return { label: `Dinner until ${Math.floor(mins / 60)}h ${mins % 60}m`, status: 'active', period: 'Dinner' };
     }
     return { label: 'Dining halls closed', status: 'closed', period: null };
 }
 
 function getCurrentPeriod() {
     const h = new Date().getHours();
-    if (h < 15) return 'Lunch';   // show lunch until 3pm
+    if (h < 17) return 'Lunch';   // show lunch until 5pm
     return 'Dinner';
 }
 
