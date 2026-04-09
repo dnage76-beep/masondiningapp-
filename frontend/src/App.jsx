@@ -384,107 +384,347 @@ function FoodItem({ item }) {
     );
 }
 
-// ── Secret Code Hooks ──────────────────────────────────────
-function useSecretCode(sequence, callback) {
+// ── Konami Code Hook ──────────────────────────────────────
+function useKonami(callback) {
     useEffect(() => {
+        const code = [38, 38, 40, 40, 37, 39, 37, 39, 66, 65];
         let pos = 0;
         const handler = (e) => {
-            if (e.keyCode === sequence[pos]) {
+            if (e.keyCode === code[pos]) {
                 pos++;
-                if (pos === sequence.length) { callback(); pos = 0; }
+                if (pos === code.length) { callback(); pos = 0; }
             } else { pos = 0; }
         };
         window.addEventListener('keydown', handler);
         return () => window.removeEventListener('keydown', handler);
-    }, [callback, sequence]);
+    }, [callback]);
 }
 
-const KONAMI = [38, 38, 40, 40, 37, 39, 37, 39, 66, 65]; // up up down down left right left right B A
-const FOOD_CODE = [70, 79, 79, 68]; // F O O D
+// ── Interactive Terminal ───────────────────────────────────
+function getAllFoodNames(menuData) {
+    const names = [];
+    if (menuData?.menus) {
+        for (const periods of Object.values(menuData.menus)) {
+            for (const stations of Object.values(periods)) {
+                for (const station of stations) {
+                    for (const item of (station.items || [])) {
+                        const n = item.name?.trim();
+                        if (n && !isBoring(n) && n.length < 30) names.push(formatName(n));
+                    }
+                }
+            }
+        }
+    }
+    if (names.length === 0) names.push('Chicken Tenders', 'French Fries', 'Soup', 'Burger', 'Salad');
+    return names;
+}
 
-// ── Hacking Terminal ───────────────────────────────────────
-const HACK_LINES = [
-    { text: '> Initializing GMU Dining Mainframe breach...', delay: 0 },
-    { text: '> Connecting to dining.gmu.edu:4433...', delay: 400 },
-    { text: '> SSL handshake intercepted', delay: 800 },
-    { text: '> Bypassing Sodexo firewall...', delay: 1400 },
-    { text: '[################] 100% -- FIREWALL BYPASSED', delay: 2200 },
-    { text: '', delay: 2600 },
-    { text: '> Accessing /var/dining/classified/...', delay: 2800 },
-    { text: '> WARN: Unauthorized access detected', delay: 3200 },
-    { text: '> Spoofing MAC address... done', delay: 3600 },
-    { text: '> Dumping classified files...', delay: 4200 },
-    { text: '', delay: 4600 },
-    { text: '=== CLASSIFIED FILE: chicken_tenders_recipe.txt ===', delay: 4800, color: '#eab308' },
-    { text: 'INGREDIENTS: Tyson frozen bag, fryer, prayer', delay: 5200, color: '#ccc' },
-    { text: '', delay: 5600 },
-    { text: '=== CLASSIFIED FILE: health_inspection_2024.pdf ===', delay: 5800, color: '#eab308' },
-    { text: 'Southside: "We have concerns"', delay: 6200, color: '#f87171' },
-    { text: "Ike's: \"The ice cream machine has never worked\"", delay: 6600, color: '#f87171' },
-    { text: 'The Globe: "Actually fine somehow"', delay: 7000, color: '#4ade80' },
-    { text: '', delay: 7400 },
-    { text: '=== CLASSIFIED FILE: staff_spotify_playlist.csv ===', delay: 7600, color: '#eab308' },
-    { text: '1. "Welcome to the Jungle" - Guns N Roses', delay: 8000, color: '#ccc' },
-    { text: '2. "Under Pressure" - Queen', delay: 8300, color: '#ccc' },
-    { text: '3. "Highway to Hell" - AC/DC', delay: 8600, color: '#ccc' },
-    { text: '', delay: 9000 },
-    { text: '=== CLASSIFIED FILE: real_food_costs.xlsx ===', delay: 9200, color: '#eab308' },
-    { text: 'Dining dollar value: $1.00 = $0.23 actual food', delay: 9600, color: '#f87171' },
-    { text: 'Meal swipe cost to GMU: $3.47', delay: 9900, color: '#f87171' },
-    { text: 'Meal swipe cost to you: $17.50', delay: 10200, color: '#f87171' },
-    { text: '', delay: 10600 },
-    { text: '=== CLASSIFIED FILE: renovation_plans_2027.txt ===', delay: 10800, color: '#eab308' },
-    { text: 'Southside to be renamed "Sadside" per student vote', delay: 11200, color: '#ccc' },
-    { text: "Ike's adding a Chick-fil-A (UNCONFIRMED)", delay: 11600, color: '#4ade80' },
-    { text: '', delay: 12000 },
-    { text: '> ALERT: Campus police notified', delay: 12200, color: '#f87171' },
-    { text: '> Erasing logs...', delay: 12600 },
-    { text: '> Closing connection...', delay: 13000 },
-    { text: '', delay: 13400 },
-    { text: '> Download complete. Returning to dining app.', delay: 13600, color: '#4ade80' },
-];
+function processCommand(cmd, menuData) {
+    const c = cmd.trim().toLowerCase();
 
-function HackTerminal({ onDone, menuData }) {
-    const [lines, setLines] = useState([]);
-    const termRef = useRef(null);
+    if (c === 'help') return [
+        { text: 'Available commands:', color: '#eab308' },
+        { text: '  help          -- show this message' },
+        { text: '  hack          -- breach the dining mainframe' },
+        { text: '  foodfight     -- launch food fight mini-game' },
+        { text: '  roast         -- roast a random dining hall' },
+        { text: '  rate          -- today\'s menu rating' },
+        { text: '  secret        -- classified dining intel' },
+        { text: '  whoami        -- identity check' },
+        { text: '  sudo          -- try it' },
+        { text: '  fortune       -- dining hall fortune cookie' },
+        { text: '  matrix        -- you know what this does' },
+        { text: '  exit          -- close terminal' },
+        { text: '' },
+        { text: 'Type any command and press Enter.', color: '#666' },
+    ];
 
-    useEffect(() => {
-        const timers = HACK_LINES.map((line, i) =>
-            setTimeout(() => {
-                setLines(prev => [...prev, line]);
-                if (termRef.current) termRef.current.scrollTop = termRef.current.scrollHeight;
-            }, line.delay)
-        );
+    if (c === 'hack') return [
+        { text: '> Initializing GMU Dining Mainframe breach...', color: '#4ade80' },
+        { text: '> Connecting to dining.gmu.edu:4433...' },
+        { text: '> SSL handshake intercepted' },
+        { text: '> Bypassing Sodexo firewall...' },
+        { text: '[################] 100% -- FIREWALL BYPASSED', color: '#4ade80' },
+        { text: '' },
+        { text: '=== CLASSIFIED: chicken_tenders_recipe.txt ===', color: '#eab308' },
+        { text: 'INGREDIENTS: Tyson frozen bag, fryer, prayer', color: '#ccc' },
+        { text: '' },
+        { text: '=== CLASSIFIED: health_inspection_2024.pdf ===', color: '#eab308' },
+        { text: 'Southside: "We have concerns"', color: '#f87171' },
+        { text: "Ike's: \"The ice cream machine has never worked\"", color: '#f87171' },
+        { text: 'The Globe: "Actually fine somehow"', color: '#4ade80' },
+        { text: '' },
+        { text: '=== CLASSIFIED: staff_spotify_playlist.csv ===', color: '#eab308' },
+        { text: '1. "Welcome to the Jungle" - Guns N Roses', color: '#ccc' },
+        { text: '2. "Under Pressure" - Queen', color: '#ccc' },
+        { text: '3. "Highway to Hell" - AC/DC', color: '#ccc' },
+        { text: '' },
+        { text: '=== CLASSIFIED: real_food_costs.xlsx ===', color: '#eab308' },
+        { text: 'Dining dollar value: $1.00 = $0.23 actual food', color: '#f87171' },
+        { text: 'Meal swipe cost to GMU: $3.47', color: '#f87171' },
+        { text: 'Meal swipe cost to you: $17.50', color: '#f87171' },
+        { text: '' },
+        { text: '=== CLASSIFIED: renovation_plans_2027.txt ===', color: '#eab308' },
+        { text: 'Southside to be renamed "Sadside" per student vote', color: '#ccc' },
+        { text: "Ike's adding a Chick-fil-A (UNCONFIRMED)", color: '#4ade80' },
+        { text: '' },
+        { text: '> ALERT: Campus police notified', color: '#f87171' },
+        { text: '> Erasing logs... done', color: '#4ade80' },
+    ];
 
-        const exitTimer = setTimeout(() => onDone(), 15000);
-        return () => { timers.forEach(clearTimeout); clearTimeout(exitTimer); };
-    }, [onDone]);
-
-    // Also allow clicking or pressing any key to exit
-    useEffect(() => {
-        const skip = (e) => {
-            if (lines.length > 10) onDone();
+    if (c === 'roast') {
+        const halls = ["Ike's", "Southside", "The Globe"];
+        const hall = halls[Math.floor(Math.random() * halls.length)];
+        const roasts = {
+            "Ike's": [
+                "Ike's Heart of the House is just a roulette wheel where every slot is 'carved entree'.",
+                "Ike's Flips thinks putting something between two buns makes it gourmet.",
+                "The Ike's stir-fry bar is what happens when you give an 18 year old a wok and no training.",
+                "Ike's is the dining hall you go to when you've given up on having standards.",
+                "Ike's omelet bar: where dreams of a good breakfast go to die in egg whites.",
+            ],
+            "Southside": [
+                "Southside Manor serves food that's technically edible. Technically.",
+                "Southside Patriot Pit is just a Burger King with worse lighting.",
+                "Going to Southside is like choosing the middle option on everything. You won't hate it. You won't remember it.",
+                "Southside soup is just water that looked at a vegetable once.",
+                "Southside's best quality is that it's close to the parking garage so you can leave faster.",
+            ],
+            "The Globe": [
+                "The Globe's 'Cultural Crossroads' is doing a lot of heavy lifting for one station.",
+                "The Globe is what happens when a dining hall has a midlife crisis and tries to be worldly.",
+                "Eating at the Globe feels like a field trip nobody asked for.",
+                "The Globe is the dining hall equivalent of that one friend who studied abroad for a semester and won't shut up about it.",
+                "The Globe's soup is actually good though. I got nothing. Carry on.",
+            ],
         };
-        window.addEventListener('keydown', skip);
-        return () => window.removeEventListener('keydown', skip);
-    }, [lines.length, onDone]);
+        const r = roasts[hall][Math.floor(Math.random() * roasts[hall].length)];
+        return [
+            { text: `Roasting ${hall}...`, color: '#eab308' },
+            { text: '' },
+            { text: r, color: '#f87171' },
+        ];
+    }
+
+    if (c === 'rate') {
+        const foods = getAllFoodNames(menuData);
+        const score = (Math.random() * 4 + 3).toFixed(1); // 3.0 - 7.0
+        const verdicts = [
+            'Edible. Barely.', 'Could be worse.', 'Mid.', 'Actually not terrible.',
+            'Surprisingly decent.', 'Your tuition at work.', 'You get what you pay for.',
+            'The soup carries.', "It's giving cafeteria.", 'Peak mid-tier.',
+        ];
+        const verdict = verdicts[Math.floor(Math.random() * verdicts.length)];
+        return [
+            { text: `Today's Menu Rating: ${score}/10`, color: '#eab308' },
+            { text: `Verdict: ${verdict}`, color: '#ccc' },
+            { text: `Items available: ${foods.length}`, color: '#666' },
+            { text: `Best looking item: ${foods[Math.floor(Math.random() * foods.length)]}`, color: '#4ade80' },
+            { text: `Worst looking item: ${foods[Math.floor(Math.random() * foods.length)]}`, color: '#f87171' },
+        ];
+    }
+
+    if (c === 'secret') {
+        const secrets = [
+            ["The Ike's soft serve machine has been 'broken' 47 times this semester.", "It works. They just don't want to clean it."],
+            ["Southside Manor's 'chef special' is just whatever didn't sell yesterday.", "This is not a joke."],
+            ["The Globe's soup recipe is from a 2009 Allrecipes post.", "It still slaps though."],
+            ["There are exactly 3 students who have eaten at all 3 dining halls in one day.", "Two of them regret it. One became a legend."],
+            ["The dining halls collectively waste 847 lbs of food per week.", "But they ran out of chicken tenders at 6pm. Make it make sense."],
+            ["A Southside worker once found a student napping in the back booth for 4 hours.", "They let him sleep. Respect."],
+            ["The campus squirrels eat better than you.", "They have access to all 3 dining halls without a meal plan."],
+            ["Ike's has a secret menu item: ask for 'The Patriot' at Flips.", "Just kidding. They'll look at you weird."],
+        ];
+        const s = secrets[Math.floor(Math.random() * secrets.length)];
+        return [
+            { text: '=== DECLASSIFIED ===', color: '#eab308' },
+            { text: s[0], color: '#ccc' },
+            { text: s[1], color: '#666' },
+        ];
+    }
+
+    if (c === 'whoami') return [
+        { text: 'root@gmu-dining', color: '#4ade80' },
+        { text: 'Access level: HUNGRY', color: '#ccc' },
+        { text: 'Meal swipes remaining: Not enough', color: '#f87171' },
+        { text: 'Dining dollar balance: Concerning', color: '#f87171' },
+        { text: 'Favorite hall: You have no loyalty', color: '#666' },
+    ];
+
+    if (c === 'sudo' || c.startsWith('sudo ')) return [
+        { text: `[sudo] password for student: `, color: '#ccc' },
+        { text: 'student is not in the sudoers file.', color: '#f87171' },
+        { text: 'This incident will be reported to Housing & Residence Life.', color: '#f87171' },
+    ];
+
+    if (c === 'fortune') {
+        const fortunes = [
+            "The chicken today will be... acceptable.",
+            "You will stand in line for 20 minutes and it will not be worth it.",
+            "A great soup awaits you. But not at Southside.",
+            "Today is a good day to try the Globe. Tomorrow, not so much.",
+            "Your meal swipes are finite. Choose wisely. You won't.",
+            "Someone will take the last chicken tenders right before you. Accept this.",
+            "The salad bar holds the key to your health. You will ignore it.",
+            "Beware the 'daily special.' It's only special because nobody ordered it yesterday.",
+            "A fork will break today. It may be yours.",
+            "You will make eye contact with a dining hall worker and both of you will look away.",
+            "The dining hall closes in less time than you think. Run.",
+            "You will tell yourself you'll eat healthy today. You will not.",
+        ];
+        const f = fortunes[Math.floor(Math.random() * fortunes.length)];
+        return [
+            { text: '=== YOUR DINING FORTUNE ===', color: '#eab308' },
+            { text: '' },
+            { text: f, color: '#ccc' },
+        ];
+    }
+
+    if (c === 'matrix') return [
+        { text: 'Waking up...', color: '#4ade80' },
+        { text: '' },
+        { text: 'The Matrix has you, Neo.', color: '#4ade80' },
+        { text: '' },
+        { text: 'You think that\'s chicken you\'re eating?', color: '#4ade80' },
+        { text: '' },
+        { text: 'There is no spoon. There is only a spork.', color: '#4ade80' },
+        { text: 'And it\'s the last clean one.', color: '#666' },
+    ];
+
+    if (c === 'jillian' || c === 'jill') return [
+        { text: '' },
+        { text: '-----------------------------------------------', color: '#f9a8d4' },
+        { text: '' },
+        { text: 'Hey Jill,', color: '#fdf2f8' },
+        { text: '' },
+        { text: 'If you\'re reading this, you typed your name', color: '#fdf2f8' },
+        { text: 'into a fake dining hall terminal. I love that.', color: '#fdf2f8' },
+        { text: '' },
+        { text: 'I hid this here because you deserve to find', color: '#fdf2f8' },
+        { text: 'little surprises in random places. Even in a', color: '#fdf2f8' },
+        { text: 'dumb side project about cafeteria food.', color: '#fdf2f8' },
+        { text: '' },
+        { text: 'You make everything better. The good days,', color: '#fdf2f8' },
+        { text: 'the hard days, the boring ones in between.', color: '#fdf2f8' },
+        { text: 'I don\'t say it enough but I think about how', color: '#fdf2f8' },
+        { text: 'lucky I am pretty much all the time.', color: '#fdf2f8' },
+        { text: '' },
+        { text: 'I love you more than Ike\'s chicken tenders.', color: '#f9a8d4' },
+        { text: 'And that\'s really saying something.', color: '#f9a8d4' },
+        { text: '' },
+        { text: '- Derek', color: '#fdf2f8' },
+        { text: '' },
+        { text: '-----------------------------------------------', color: '#f9a8d4' },
+        { text: '' },
+    ];
+
+    if (c === 'foodfight') return '__FOODFIGHT__';
+
+    if (c === 'exit' || c === 'quit' || c === 'q') return '__EXIT__';
+
+    if (c === 'ls') return [
+        { text: 'chicken_tenders_recipe.txt  health_inspection.pdf', color: '#60a5fa' },
+        { text: 'staff_playlist.csv          food_costs.xlsx', color: '#60a5fa' },
+        { text: 'renovation_plans.txt        secret_menu.md', color: '#60a5fa' },
+        { text: '' },
+        { text: 'Try "hack" to access these files.', color: '#666' },
+    ];
+
+    if (c === 'cd' || c.startsWith('cd ')) return [
+        { text: 'bash: cd: /var/dining/kitchen: Permission denied', color: '#f87171' },
+        { text: 'Nice try though.', color: '#666' },
+    ];
+
+    if (c === 'rm' || c.startsWith('rm ')) return [
+        { text: 'rm: cannot remove dining hall: Operation not permitted', color: '#f87171' },
+        { text: 'Trust me, we\'ve all tried.', color: '#666' },
+    ];
+
+    if (c === 'cat' || c.startsWith('cat ')) return [
+        { text: '   /\\_/\\', color: '#ccc' },
+        { text: '  ( o.o )', color: '#ccc' },
+        { text: '   > ^ <', color: '#ccc' },
+        { text: '', },
+        { text: 'Wrong kind of cat. But here you go.', color: '#666' },
+    ];
+
+    if (c === 'clear') return '__CLEAR__';
+
+    if (c === '') return [];
+
+    return [
+        { text: `bash: ${cmd.trim()}: command not found`, color: '#f87171' },
+        { text: 'Type "help" for available commands.', color: '#666' },
+    ];
+}
+
+function Terminal({ onDone, menuData, onFoodFight }) {
+    const [history, setHistory] = useState([
+        { text: 'GMU Dining Mainframe v4.2.0', color: '#4ade80' },
+        { text: 'Unauthorized access detected. Welcome anyway.', color: '#666' },
+        { text: 'Type "help" for available commands.', color: '#666' },
+        { text: '' },
+    ]);
+    const [input, setInput] = useState('');
+    const bodyRef = useRef(null);
+    const inputRef = useRef(null);
+
+    useEffect(() => {
+        inputRef.current?.focus();
+    }, []);
+
+    useEffect(() => {
+        if (bodyRef.current) bodyRef.current.scrollTop = bodyRef.current.scrollHeight;
+    }, [history]);
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        const cmd = input;
+        setInput('');
+
+        const prompt = { text: `$ ${cmd}`, color: '#4ade80' };
+        const result = processCommand(cmd, menuData);
+
+        if (result === '__EXIT__') { onDone(); return; }
+        if (result === '__CLEAR__') { setHistory([]); return; }
+        if (result === '__FOODFIGHT__') {
+            setHistory(prev => [...prev, prompt, { text: 'Launching food fight...', color: '#eab308' }]);
+            setTimeout(() => onFoodFight(), 300);
+            return;
+        }
+
+        setHistory(prev => [...prev, prompt, ...result, { text: '' }]);
+    };
 
     return (
-        <div className="hack-overlay" onClick={() => lines.length > 5 && onDone()}>
-            <div className="hack-terminal" ref={termRef}>
+        <div className="hack-overlay" onClick={() => inputRef.current?.focus()}>
+            <div className="hack-terminal" onClick={(e) => e.stopPropagation()}>
                 <div className="hack-header">
-                    <span className="hack-dot hack-dot--red" />
+                    <span className="hack-dot hack-dot--red" onClick={onDone} style={{ cursor: 'pointer' }} />
                     <span className="hack-dot hack-dot--yellow" />
                     <span className="hack-dot hack-dot--green" />
                     <span className="hack-title">root@gmu-dining ~ #</span>
                 </div>
-                <div className="hack-body">
-                    {lines.map((line, i) => (
+                <div className="hack-body" ref={bodyRef}>
+                    {history.map((line, i) => (
                         <div key={i} className="hack-line" style={{ color: line.color || '#4ade80' }}>
                             {line.text || '\u00A0'}
                         </div>
                     ))}
-                    <span className="hack-cursor">_</span>
+                    <form onSubmit={handleSubmit} className="hack-input-row">
+                        <span style={{ color: '#4ade80' }}>$ </span>
+                        <input
+                            ref={inputRef}
+                            className="hack-input"
+                            value={input}
+                            onChange={(e) => setInput(e.target.value)}
+                            autoFocus
+                            autoComplete="off"
+                            autoCorrect="off"
+                            autoCapitalize="off"
+                            spellCheck="false"
+                        />
+                    </form>
                 </div>
             </div>
         </div>
@@ -492,191 +732,264 @@ function HackTerminal({ onDone, menuData }) {
 }
 
 // ── Food Fight Game ────────────────────────────────────────
+const FOOD_EMOJIS = ['🍗', '🍔', '🌮', '🍕', '🥗', '🍜', '🍟', '🥪', '🌯', '🍲', '🥩', '🍳', '🧇', '🥞', '🍝', '🍱'];
+const SPLAT_COLORS = ['#4ade80', '#60a5fa', '#f87171', '#eab308', '#c084fc', '#fb923c', '#f472b6'];
+const GAME_DURATION = 20;
+
 function FoodFight({ onDone, menuData }) {
     const canvasRef = useRef(null);
-    const [score, setScore] = useState(0);
-    const [timeLeft, setTimeLeft] = useState(15);
-    const [gameOver, setGameOver] = useState(false);
-    const foodsRef = useRef([]);
     const scoreRef = useRef(0);
     const animRef = useRef(null);
+    const timeRef = useRef(GAME_DURATION);
+    const foodsRef = useRef([]);
+    const particlesRef = useRef([]);
+    const floatsRef = useRef([]);
+    const gameOverRef = useRef(false);
+    const [, forceRender] = useState(0);
 
-    // Gather all food names from menu data
-    const allFoods = useRef([]);
-    useEffect(() => {
-        const names = [];
-        if (menuData?.menus) {
-            for (const periods of Object.values(menuData.menus)) {
-                for (const stations of Object.values(periods)) {
-                    for (const station of stations) {
-                        for (const item of (station.items || [])) {
-                            const n = item.name?.trim();
-                            if (n && !isBoring(n) && n.length < 30) names.push(formatName(n));
-                        }
-                    }
-                }
-            }
-        }
-        if (names.length === 0) names.push('Chicken Tenders', 'French Fries', 'Soup', 'Burger', 'Salad');
-        allFoods.current = names;
-    }, [menuData]);
+    const allFoods = useRef(getAllFoodNames(menuData));
 
-    // Spawn food items
+    // Spawner -- gradually gets faster
     useEffect(() => {
-        const spawn = () => {
-            if (allFoods.current.length === 0) return;
-            const name = allFoods.current[Math.floor(Math.random() * allFoods.current.length)];
-            const canvas = canvasRef.current;
-            if (!canvas) return;
-            const w = canvas.width;
-            const h = canvas.height;
-            foodsRef.current.push({
-                name,
-                x: Math.random() * (w - 120) + 10,
-                y: -30,
-                vy: 1.5 + Math.random() * 2,
-                vx: (Math.random() - 0.5) * 2,
-                size: 14 + Math.random() * 6,
-                alive: true,
-                rotation: (Math.random() - 0.5) * 0.1,
-                angle: 0,
-            });
+        let timer = null;
+        let elapsed = 0;
+        const tick = () => {
+            elapsed++;
+            const rate = Math.max(350, 550 - elapsed * 8);
+            timer = setTimeout(() => {
+                const canvas = canvasRef.current;
+                if (!canvas || gameOverRef.current) return;
+                const name = allFoods.current[Math.floor(Math.random() * allFoods.current.length)];
+                const emoji = FOOD_EMOJIS[Math.floor(Math.random() * FOOD_EMOJIS.length)];
+                const speedMult = 1 + elapsed * 0.015;
+                foodsRef.current.push({
+                    name, emoji,
+                    x: 60 + Math.random() * (canvas.width - 120),
+                    y: -40,
+                    vy: (1.2 + Math.random() * 1.8) * speedMult,
+                    vx: (Math.random() - 0.5) * 2,
+                    size: 14 + Math.random() * 4,
+                    alive: true,
+                    rotation: (Math.random() - 0.5) * 0.06,
+                    angle: 0,
+                });
+                tick();
+            }, rate);
         };
-        const id = setInterval(spawn, 600);
-        return () => clearInterval(id);
+        tick();
+        return () => clearTimeout(timer);
     }, []);
 
-    // Game timer
+    // Countdown
     useEffect(() => {
-        if (gameOver) return;
         const id = setInterval(() => {
-            setTimeLeft(t => {
-                if (t <= 1) {
-                    setGameOver(true);
-                    clearInterval(id);
-                    return 0;
-                }
-                return t - 1;
-            });
+            timeRef.current -= 1;
+            if (timeRef.current <= 0) {
+                gameOverRef.current = true;
+                forceRender(n => n + 1);
+                clearInterval(id);
+            }
         }, 1000);
         return () => clearInterval(id);
-    }, [gameOver]);
+    }, []);
 
     // Render loop
     useEffect(() => {
         const canvas = canvasRef.current;
         if (!canvas) return;
         const ctx = canvas.getContext('2d');
-
-        const resize = () => {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-        };
+        const resize = () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; };
         resize();
         window.addEventListener('resize', resize);
 
         const draw = () => {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            // Dark semi-transparent background
-            ctx.fillStyle = 'rgba(17, 17, 17, 0.85)';
+            ctx.fillStyle = 'rgba(17, 17, 17, 0.9)';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            // Draw food items
+            // Particles
+            for (const p of particlesRef.current) {
+                p.x += p.vx;
+                p.y += p.vy;
+                p.vy += 0.12;
+                p.life -= 0.025;
+                if (p.life <= 0) continue;
+                ctx.globalAlpha = p.life;
+                ctx.fillStyle = p.color;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.globalAlpha = 1;
+            particlesRef.current = particlesRef.current.filter(p => p.life > 0);
+
+            // Floating +1 texts
+            for (const ft of floatsRef.current) {
+                ft.y -= 1.2;
+                ft.life -= 0.02;
+                if (ft.life <= 0) continue;
+                ctx.globalAlpha = ft.life;
+                ctx.font = `bold ${ft.size}px Inter, sans-serif`;
+                ctx.fillStyle = ft.color;
+                ctx.textAlign = 'center';
+                ctx.fillText(ft.text, ft.x, ft.y);
+            }
+            ctx.globalAlpha = 1;
+            floatsRef.current = floatsRef.current.filter(ft => ft.life > 0);
+
+            // Food items
             for (const food of foodsRef.current) {
                 if (!food.alive) continue;
                 food.y += food.vy;
                 food.x += food.vx;
                 food.angle += food.rotation;
-
-                // Remove if off screen
-                if (food.y > canvas.height + 50) {
-                    food.alive = false;
-                    continue;
-                }
+                if (food.x < 20 || food.x > canvas.width - 20) food.vx *= -1;
+                if (food.y > canvas.height + 50) { food.alive = false; continue; }
 
                 ctx.save();
                 ctx.translate(food.x, food.y);
                 ctx.rotate(food.angle);
+
+                ctx.font = `${food.size + 6}px serif`;
+                ctx.textAlign = 'center';
+                ctx.fillText(food.emoji, 0, -food.size * 0.2);
+
                 ctx.font = `${food.size}px Inter, sans-serif`;
                 ctx.fillStyle = '#e5e5e5';
-                ctx.textAlign = 'center';
-                ctx.fillText(food.name, 0, 0);
+                ctx.fillText(food.name, 0, food.size * 0.9);
                 ctx.restore();
             }
-
-            // Clean up dead items
             foodsRef.current = foodsRef.current.filter(f => f.alive);
 
-            // HUD
-            ctx.font = 'bold 24px Inter, sans-serif';
+            // HUD -- score
+            ctx.font = 'bold 26px Inter, sans-serif';
             ctx.fillStyle = '#4ade80';
             ctx.textAlign = 'left';
-            ctx.fillText(`Score: ${scoreRef.current}`, 20, 40);
+            ctx.fillText(scoreRef.current, 20, 38);
+            ctx.font = '12px Inter, sans-serif';
+            ctx.fillStyle = '#555';
+            ctx.fillText('SCORE', 20, 54);
+
+            // HUD -- timer
+            ctx.font = 'bold 26px Inter, sans-serif';
             ctx.textAlign = 'right';
-            ctx.fillStyle = timeLeft <= 5 ? '#f87171' : '#e5e5e5';
-            ctx.fillText(`${timeLeft}s`, canvas.width - 20, 40);
+            ctx.fillStyle = timeRef.current <= 5 ? '#f87171' : timeRef.current <= 10 ? '#eab308' : '#e5e5e5';
+            ctx.fillText(timeRef.current, canvas.width - 20, 38);
+            ctx.font = '12px Inter, sans-serif';
+            ctx.fillStyle = '#555';
+            ctx.fillText('TIME', canvas.width - 20, 54);
 
-            ctx.font = '13px Inter, sans-serif';
-            ctx.fillStyle = '#666';
+            // Bottom hint
+            ctx.font = '12px Inter, sans-serif';
+            ctx.fillStyle = '#333';
             ctx.textAlign = 'center';
-            ctx.fillText('Click the food! Type FOOD again to exit.', canvas.width / 2, canvas.height - 20);
+            ctx.fillText('Click the food to catch it', canvas.width / 2, canvas.height - 14);
 
-            if (!gameOver) {
-                animRef.current = requestAnimationFrame(draw);
-            } else {
-                // Game over screen
-                ctx.fillStyle = 'rgba(0,0,0,0.7)';
+            if (gameOverRef.current) {
+                ctx.fillStyle = 'rgba(0,0,0,0.75)';
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
-                ctx.font = 'bold 36px Inter, sans-serif';
+                const cy = canvas.height / 2;
+
+                ctx.font = 'bold 38px Inter, sans-serif';
                 ctx.fillStyle = '#4ade80';
                 ctx.textAlign = 'center';
-                ctx.fillText('GAME OVER', canvas.width / 2, canvas.height / 2 - 30);
-                ctx.font = '24px Inter, sans-serif';
+                ctx.fillText('GAME OVER', canvas.width / 2, cy - 50);
+
+                ctx.font = 'bold 52px Inter, sans-serif';
                 ctx.fillStyle = '#e5e5e5';
-                ctx.fillText(`You caught ${scoreRef.current} items`, canvas.width / 2, canvas.height / 2 + 15);
-                ctx.font = '14px Inter, sans-serif';
-                ctx.fillStyle = '#999';
-                const rating = scoreRef.current >= 20 ? 'Dining Hall Legend' : scoreRef.current >= 12 ? 'Meal Swipe Master' : scoreRef.current >= 6 ? 'Cafeteria Regular' : 'Freshman';
-                ctx.fillText(rating, canvas.width / 2, canvas.height / 2 + 50);
-                ctx.fillText('Click anywhere to close', canvas.width / 2, canvas.height / 2 + 80);
+                ctx.fillText(scoreRef.current, canvas.width / 2, cy + 10);
+
+                ctx.font = 'bold 16px Inter, sans-serif';
+                let rating, rc;
+                const s = scoreRef.current;
+                if (s >= 40) { rating = 'Dining Hall Legend'; rc = '#c084fc'; }
+                else if (s >= 25) { rating = 'Head Chef'; rc = '#eab308'; }
+                else if (s >= 15) { rating = 'Line Cook'; rc = '#4ade80'; }
+                else if (s >= 8) { rating = 'Cafeteria Regular'; rc = '#60a5fa'; }
+                else { rating = 'Freshman'; rc = '#f87171'; }
+                ctx.fillStyle = rc;
+                ctx.fillText(rating, canvas.width / 2, cy + 50);
+
+                ctx.font = '13px Inter, sans-serif';
+                ctx.fillStyle = '#555';
+                ctx.fillText('Click anywhere to close', canvas.width / 2, cy + 85);
+            } else {
+                animRef.current = requestAnimationFrame(draw);
             }
         };
         animRef.current = requestAnimationFrame(draw);
-        return () => {
-            cancelAnimationFrame(animRef.current);
-            window.removeEventListener('resize', resize);
-        };
-    }, [gameOver, timeLeft]);
+        return () => { cancelAnimationFrame(animRef.current); window.removeEventListener('resize', resize); };
+    }, []);
 
-    // Click handler -- hit detection
+    // Re-draw once on game over to show the end screen
+    useEffect(() => {
+        if (gameOverRef.current && canvasRef.current) {
+            const canvas = canvasRef.current;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = 'rgba(0,0,0,0.75)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            const cy = canvas.height / 2;
+            ctx.font = 'bold 38px Inter, sans-serif';
+            ctx.fillStyle = '#4ade80';
+            ctx.textAlign = 'center';
+            ctx.fillText('GAME OVER', canvas.width / 2, cy - 50);
+            ctx.font = 'bold 52px Inter, sans-serif';
+            ctx.fillStyle = '#e5e5e5';
+            ctx.fillText(scoreRef.current, canvas.width / 2, cy + 10);
+            ctx.font = 'bold 16px Inter, sans-serif';
+            const s = scoreRef.current;
+            let rating, rc;
+            if (s >= 40) { rating = 'Dining Hall Legend'; rc = '#c084fc'; }
+            else if (s >= 25) { rating = 'Head Chef'; rc = '#eab308'; }
+            else if (s >= 15) { rating = 'Line Cook'; rc = '#4ade80'; }
+            else if (s >= 8) { rating = 'Cafeteria Regular'; rc = '#60a5fa'; }
+            else { rating = 'Freshman'; rc = '#f87171'; }
+            ctx.fillStyle = rc;
+            ctx.fillText(rating, canvas.width / 2, cy + 50);
+            ctx.font = '13px Inter, sans-serif';
+            ctx.fillStyle = '#555';
+            ctx.fillText('Click anywhere to close', canvas.width / 2, cy + 85);
+        }
+    });
+
     const handleClick = useCallback((e) => {
-        if (gameOver) { onDone(); return; }
+        if (gameOverRef.current) { onDone(); return; }
         const rect = canvasRef.current.getBoundingClientRect();
         const mx = e.clientX - rect.left;
         const my = e.clientY - rect.top;
 
         for (const food of foodsRef.current) {
             if (!food.alive) continue;
-            const dx = mx - food.x;
-            const dy = my - food.y;
-            const hitRadius = food.name.length * food.size * 0.3;
-            if (Math.abs(dx) < hitRadius && Math.abs(dy) < food.size) {
+            const hw = food.name.length * food.size * 0.28;
+            const hh = food.size * 1.4;
+            if (Math.abs(mx - food.x) < hw && Math.abs(my - food.y) < hh) {
                 food.alive = false;
                 scoreRef.current += 1;
-                setScore(s => s + 1);
+
+                // Burst particles
+                const color = SPLAT_COLORS[Math.floor(Math.random() * SPLAT_COLORS.length)];
+                for (let i = 0; i < 10; i++) {
+                    const ang = (Math.PI * 2 * i) / 10 + (Math.random() - 0.5) * 0.4;
+                    particlesRef.current.push({
+                        x: food.x, y: food.y,
+                        vx: Math.cos(ang) * (2 + Math.random() * 3),
+                        vy: Math.sin(ang) * (2 + Math.random() * 3) - 1.5,
+                        r: 2 + Math.random() * 3,
+                        color, life: 0.6 + Math.random() * 0.4,
+                    });
+                }
+
+                // Floating +1
+                floatsRef.current.push({
+                    x: food.x, y: food.y - 15,
+                    text: '+1', color: '#4ade80', size: 20, life: 1,
+                });
                 break;
             }
         }
-    }, [gameOver, onDone]);
+    }, [onDone]);
 
-    return (
-        <canvas
-            ref={canvasRef}
-            className="foodfight-canvas"
-            onClick={handleClick}
-        />
-    );
+    return <canvas ref={canvasRef} className="foodfight-canvas" onClick={handleClick} />;
 }
 
 // ── Main App ─────────────────────────────────────────────────
@@ -687,12 +1000,11 @@ export default function App() {
     const [refreshing, setRefreshing] = useState(false);
     const [selectedPeriod, setSelectedPeriod] = useState(() => getCurrentPeriod());
     const [logoClicks, setLogoClicks] = useState(0);
-    const [hackMode, setHackMode] = useState(false);
+    const [terminalOpen, setTerminalOpen] = useState(false);
     const [foodFightMode, setFoodFightMode] = useState(false);
     const [vibe] = useState(() => getVibeMessage());
 
-    useSecretCode(KONAMI, useCallback(() => setHackMode(true), []));
-    useSecretCode(FOOD_CODE, useCallback(() => setFoodFightMode(f => !f), []));
+    useKonami(useCallback(() => setTerminalOpen(true), []));
 
     const loadMenus = (isRefresh = false) => {
         if (isRefresh) setRefreshing(true);
@@ -784,7 +1096,13 @@ export default function App() {
 
     return (
         <div className="app">
-            {hackMode && <HackTerminal onDone={() => setHackMode(false)} menuData={menuData} />}
+            {terminalOpen && (
+                <Terminal
+                    onDone={() => setTerminalOpen(false)}
+                    menuData={menuData}
+                    onFoodFight={() => { setTerminalOpen(false); setFoodFightMode(true); }}
+                />
+            )}
             {foodFightMode && <FoodFight onDone={() => setFoodFightMode(false)} menuData={menuData} />}
 
             <header className="header">
