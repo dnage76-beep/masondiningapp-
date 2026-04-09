@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Clock, Calendar, RefreshCw, Utensils, Mail } from 'lucide-react';
 
 const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:5001';
@@ -384,20 +384,299 @@ function FoodItem({ item }) {
     );
 }
 
-// ── Konami Code Hook ────────────────────────────────────────
-function useKonami(callback) {
+// ── Secret Code Hooks ──────────────────────────────────────
+function useSecretCode(sequence, callback) {
     useEffect(() => {
-        const code = [38, 38, 40, 40, 37, 39, 37, 39, 66, 65]; // up up down down left right left right b a
         let pos = 0;
         const handler = (e) => {
-            if (e.keyCode === code[pos]) {
+            if (e.keyCode === sequence[pos]) {
                 pos++;
-                if (pos === code.length) { callback(); pos = 0; }
+                if (pos === sequence.length) { callback(); pos = 0; }
             } else { pos = 0; }
         };
         window.addEventListener('keydown', handler);
         return () => window.removeEventListener('keydown', handler);
-    }, [callback]);
+    }, [callback, sequence]);
+}
+
+const KONAMI = [38, 38, 40, 40, 37, 39, 37, 39, 66, 65]; // up up down down left right left right B A
+const FOOD_CODE = [70, 79, 79, 68]; // F O O D
+
+// ── Hacking Terminal ───────────────────────────────────────
+const HACK_LINES = [
+    { text: '> Initializing GMU Dining Mainframe breach...', delay: 0 },
+    { text: '> Connecting to dining.gmu.edu:4433...', delay: 400 },
+    { text: '> SSL handshake intercepted', delay: 800 },
+    { text: '> Bypassing Sodexo firewall...', delay: 1400 },
+    { text: '[################] 100% -- FIREWALL BYPASSED', delay: 2200 },
+    { text: '', delay: 2600 },
+    { text: '> Accessing /var/dining/classified/...', delay: 2800 },
+    { text: '> WARN: Unauthorized access detected', delay: 3200 },
+    { text: '> Spoofing MAC address... done', delay: 3600 },
+    { text: '> Dumping classified files...', delay: 4200 },
+    { text: '', delay: 4600 },
+    { text: '=== CLASSIFIED FILE: chicken_tenders_recipe.txt ===', delay: 4800, color: '#eab308' },
+    { text: 'INGREDIENTS: Tyson frozen bag, fryer, prayer', delay: 5200, color: '#ccc' },
+    { text: '', delay: 5600 },
+    { text: '=== CLASSIFIED FILE: health_inspection_2024.pdf ===', delay: 5800, color: '#eab308' },
+    { text: 'Southside: "We have concerns"', delay: 6200, color: '#f87171' },
+    { text: "Ike's: \"The ice cream machine has never worked\"", delay: 6600, color: '#f87171' },
+    { text: 'The Globe: "Actually fine somehow"', delay: 7000, color: '#4ade80' },
+    { text: '', delay: 7400 },
+    { text: '=== CLASSIFIED FILE: staff_spotify_playlist.csv ===', delay: 7600, color: '#eab308' },
+    { text: '1. "Welcome to the Jungle" - Guns N Roses', delay: 8000, color: '#ccc' },
+    { text: '2. "Under Pressure" - Queen', delay: 8300, color: '#ccc' },
+    { text: '3. "Highway to Hell" - AC/DC', delay: 8600, color: '#ccc' },
+    { text: '', delay: 9000 },
+    { text: '=== CLASSIFIED FILE: real_food_costs.xlsx ===', delay: 9200, color: '#eab308' },
+    { text: 'Dining dollar value: $1.00 = $0.23 actual food', delay: 9600, color: '#f87171' },
+    { text: 'Meal swipe cost to GMU: $3.47', delay: 9900, color: '#f87171' },
+    { text: 'Meal swipe cost to you: $17.50', delay: 10200, color: '#f87171' },
+    { text: '', delay: 10600 },
+    { text: '=== CLASSIFIED FILE: renovation_plans_2027.txt ===', delay: 10800, color: '#eab308' },
+    { text: 'Southside to be renamed "Sadside" per student vote', delay: 11200, color: '#ccc' },
+    { text: "Ike's adding a Chick-fil-A (UNCONFIRMED)", delay: 11600, color: '#4ade80' },
+    { text: '', delay: 12000 },
+    { text: '> ALERT: Campus police notified', delay: 12200, color: '#f87171' },
+    { text: '> Erasing logs...', delay: 12600 },
+    { text: '> Closing connection...', delay: 13000 },
+    { text: '', delay: 13400 },
+    { text: '> Download complete. Returning to dining app.', delay: 13600, color: '#4ade80' },
+];
+
+function HackTerminal({ onDone, menuData }) {
+    const [lines, setLines] = useState([]);
+    const termRef = useRef(null);
+
+    useEffect(() => {
+        const timers = HACK_LINES.map((line, i) =>
+            setTimeout(() => {
+                setLines(prev => [...prev, line]);
+                if (termRef.current) termRef.current.scrollTop = termRef.current.scrollHeight;
+            }, line.delay)
+        );
+
+        const exitTimer = setTimeout(() => onDone(), 15000);
+        return () => { timers.forEach(clearTimeout); clearTimeout(exitTimer); };
+    }, [onDone]);
+
+    // Also allow clicking or pressing any key to exit
+    useEffect(() => {
+        const skip = (e) => {
+            if (lines.length > 10) onDone();
+        };
+        window.addEventListener('keydown', skip);
+        return () => window.removeEventListener('keydown', skip);
+    }, [lines.length, onDone]);
+
+    return (
+        <div className="hack-overlay" onClick={() => lines.length > 5 && onDone()}>
+            <div className="hack-terminal" ref={termRef}>
+                <div className="hack-header">
+                    <span className="hack-dot hack-dot--red" />
+                    <span className="hack-dot hack-dot--yellow" />
+                    <span className="hack-dot hack-dot--green" />
+                    <span className="hack-title">root@gmu-dining ~ #</span>
+                </div>
+                <div className="hack-body">
+                    {lines.map((line, i) => (
+                        <div key={i} className="hack-line" style={{ color: line.color || '#4ade80' }}>
+                            {line.text || '\u00A0'}
+                        </div>
+                    ))}
+                    <span className="hack-cursor">_</span>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+// ── Food Fight Game ────────────────────────────────────────
+function FoodFight({ onDone, menuData }) {
+    const canvasRef = useRef(null);
+    const [score, setScore] = useState(0);
+    const [timeLeft, setTimeLeft] = useState(15);
+    const [gameOver, setGameOver] = useState(false);
+    const foodsRef = useRef([]);
+    const scoreRef = useRef(0);
+    const animRef = useRef(null);
+
+    // Gather all food names from menu data
+    const allFoods = useRef([]);
+    useEffect(() => {
+        const names = [];
+        if (menuData?.menus) {
+            for (const periods of Object.values(menuData.menus)) {
+                for (const stations of Object.values(periods)) {
+                    for (const station of stations) {
+                        for (const item of (station.items || [])) {
+                            const n = item.name?.trim();
+                            if (n && !isBoring(n) && n.length < 30) names.push(formatName(n));
+                        }
+                    }
+                }
+            }
+        }
+        if (names.length === 0) names.push('Chicken Tenders', 'French Fries', 'Soup', 'Burger', 'Salad');
+        allFoods.current = names;
+    }, [menuData]);
+
+    // Spawn food items
+    useEffect(() => {
+        const spawn = () => {
+            if (allFoods.current.length === 0) return;
+            const name = allFoods.current[Math.floor(Math.random() * allFoods.current.length)];
+            const canvas = canvasRef.current;
+            if (!canvas) return;
+            const w = canvas.width;
+            const h = canvas.height;
+            foodsRef.current.push({
+                name,
+                x: Math.random() * (w - 120) + 10,
+                y: -30,
+                vy: 1.5 + Math.random() * 2,
+                vx: (Math.random() - 0.5) * 2,
+                size: 14 + Math.random() * 6,
+                alive: true,
+                rotation: (Math.random() - 0.5) * 0.1,
+                angle: 0,
+            });
+        };
+        const id = setInterval(spawn, 600);
+        return () => clearInterval(id);
+    }, []);
+
+    // Game timer
+    useEffect(() => {
+        if (gameOver) return;
+        const id = setInterval(() => {
+            setTimeLeft(t => {
+                if (t <= 1) {
+                    setGameOver(true);
+                    clearInterval(id);
+                    return 0;
+                }
+                return t - 1;
+            });
+        }, 1000);
+        return () => clearInterval(id);
+    }, [gameOver]);
+
+    // Render loop
+    useEffect(() => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+
+        const resize = () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        };
+        resize();
+        window.addEventListener('resize', resize);
+
+        const draw = () => {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Dark semi-transparent background
+            ctx.fillStyle = 'rgba(17, 17, 17, 0.85)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Draw food items
+            for (const food of foodsRef.current) {
+                if (!food.alive) continue;
+                food.y += food.vy;
+                food.x += food.vx;
+                food.angle += food.rotation;
+
+                // Remove if off screen
+                if (food.y > canvas.height + 50) {
+                    food.alive = false;
+                    continue;
+                }
+
+                ctx.save();
+                ctx.translate(food.x, food.y);
+                ctx.rotate(food.angle);
+                ctx.font = `${food.size}px Inter, sans-serif`;
+                ctx.fillStyle = '#e5e5e5';
+                ctx.textAlign = 'center';
+                ctx.fillText(food.name, 0, 0);
+                ctx.restore();
+            }
+
+            // Clean up dead items
+            foodsRef.current = foodsRef.current.filter(f => f.alive);
+
+            // HUD
+            ctx.font = 'bold 24px Inter, sans-serif';
+            ctx.fillStyle = '#4ade80';
+            ctx.textAlign = 'left';
+            ctx.fillText(`Score: ${scoreRef.current}`, 20, 40);
+            ctx.textAlign = 'right';
+            ctx.fillStyle = timeLeft <= 5 ? '#f87171' : '#e5e5e5';
+            ctx.fillText(`${timeLeft}s`, canvas.width - 20, 40);
+
+            ctx.font = '13px Inter, sans-serif';
+            ctx.fillStyle = '#666';
+            ctx.textAlign = 'center';
+            ctx.fillText('Click the food! Type FOOD again to exit.', canvas.width / 2, canvas.height - 20);
+
+            if (!gameOver) {
+                animRef.current = requestAnimationFrame(draw);
+            } else {
+                // Game over screen
+                ctx.fillStyle = 'rgba(0,0,0,0.7)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.font = 'bold 36px Inter, sans-serif';
+                ctx.fillStyle = '#4ade80';
+                ctx.textAlign = 'center';
+                ctx.fillText('GAME OVER', canvas.width / 2, canvas.height / 2 - 30);
+                ctx.font = '24px Inter, sans-serif';
+                ctx.fillStyle = '#e5e5e5';
+                ctx.fillText(`You caught ${scoreRef.current} items`, canvas.width / 2, canvas.height / 2 + 15);
+                ctx.font = '14px Inter, sans-serif';
+                ctx.fillStyle = '#999';
+                const rating = scoreRef.current >= 20 ? 'Dining Hall Legend' : scoreRef.current >= 12 ? 'Meal Swipe Master' : scoreRef.current >= 6 ? 'Cafeteria Regular' : 'Freshman';
+                ctx.fillText(rating, canvas.width / 2, canvas.height / 2 + 50);
+                ctx.fillText('Click anywhere to close', canvas.width / 2, canvas.height / 2 + 80);
+            }
+        };
+        animRef.current = requestAnimationFrame(draw);
+        return () => {
+            cancelAnimationFrame(animRef.current);
+            window.removeEventListener('resize', resize);
+        };
+    }, [gameOver, timeLeft]);
+
+    // Click handler -- hit detection
+    const handleClick = useCallback((e) => {
+        if (gameOver) { onDone(); return; }
+        const rect = canvasRef.current.getBoundingClientRect();
+        const mx = e.clientX - rect.left;
+        const my = e.clientY - rect.top;
+
+        for (const food of foodsRef.current) {
+            if (!food.alive) continue;
+            const dx = mx - food.x;
+            const dy = my - food.y;
+            const hitRadius = food.name.length * food.size * 0.3;
+            if (Math.abs(dx) < hitRadius && Math.abs(dy) < food.size) {
+                food.alive = false;
+                scoreRef.current += 1;
+                setScore(s => s + 1);
+                break;
+            }
+        }
+    }, [gameOver, onDone]);
+
+    return (
+        <canvas
+            ref={canvasRef}
+            className="foodfight-canvas"
+            onClick={handleClick}
+        />
+    );
 }
 
 // ── Main App ─────────────────────────────────────────────────
@@ -408,10 +687,12 @@ export default function App() {
     const [refreshing, setRefreshing] = useState(false);
     const [selectedPeriod, setSelectedPeriod] = useState(() => getCurrentPeriod());
     const [logoClicks, setLogoClicks] = useState(0);
-    const [konamiActive, setKonamiActive] = useState(false);
+    const [hackMode, setHackMode] = useState(false);
+    const [foodFightMode, setFoodFightMode] = useState(false);
     const [vibe] = useState(() => getVibeMessage());
 
-    useKonami(() => setKonamiActive(k => !k));
+    useSecretCode(KONAMI, useCallback(() => setHackMode(true), []));
+    useSecretCode(FOOD_CODE, useCallback(() => setFoodFightMode(f => !f), []));
 
     const loadMenus = (isRefresh = false) => {
         if (isRefresh) setRefreshing(true);
@@ -503,18 +784,21 @@ export default function App() {
 
     return (
         <div className="app">
+            {hackMode && <HackTerminal onDone={() => setHackMode(false)} menuData={menuData} />}
+            {foodFightMode && <FoodFight onDone={() => setFoodFightMode(false)} menuData={menuData} />}
+
             <header className="header">
                 <div className="header-left">
                     <h1 className="logo" onClick={() => setLogoClicks(c => c + 1)} style={{ cursor: 'pointer', userSelect: 'none' }}>
-                        <Utensils size={22} className={`logo-icon${konamiActive ? ' logo-spin' : ''}`} />
-                        <span>{konamiActive ? 'GMU Dining (god mode)' : logoClicks >= 10 ? 'GMU Dining (you found nothing)' : logoClicks >= 5 ? 'stop clicking me' : 'GMU Dining'}</span>
+                        <Utensils size={22} className="logo-icon" />
+                        <span>{logoClicks >= 10 ? 'GMU Dining (you found nothing)' : logoClicks >= 5 ? 'stop clicking me' : 'GMU Dining'}</span>
                     </h1>
                     <MealStatus />
                 </div>
                 <MailPreferences apiBase={API_BASE} />
             </header>
 
-            <main className={`main${konamiActive ? ' konami' : ''}`}>
+            <main className="main">
                 {vibe && (
                     <div className={`vibe-banner vibe-banner--${vibe.type}`}>
                         {vibe.text}

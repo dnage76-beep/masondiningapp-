@@ -439,23 +439,93 @@ h1, h2, h3 { margin: 0; font-weight: 600; }
 
 .vibe-banner--finals { color: var(--green); }
 
-/* ── Konami mode ── */
-.logo-spin { animation: spin 2s linear infinite; }
-
-.konami .hall-card { animation: rainbow 3s linear infinite; }
-.konami .food-name { animation: wobble 0.5s ease infinite alternate; }
-
-@keyframes rainbow {
-  0% { border-color: #ef4444; }
-  25% { border-color: #eab308; }
-  50% { border-color: #22c55e; }
-  75% { border-color: #3b82f6; }
-  100% { border-color: #ef4444; }
+/* ── Hacking Terminal ── */
+.hack-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: rgba(0, 0, 0, 0.95);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
 }
 
-@keyframes wobble {
-  from { transform: translateX(0); }
-  to { transform: translateX(2px); }
+.hack-terminal {
+  width: 100%;
+  max-width: 700px;
+  max-height: 85vh;
+  background: #0a0a0a;
+  border: 1px solid #333;
+  border-radius: 8px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 0 40px rgba(74, 222, 128, 0.15);
+}
+
+.hack-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 14px;
+  background: #1a1a1a;
+  border-bottom: 1px solid #333;
+}
+
+.hack-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.hack-dot--red { background: #ef4444; }
+.hack-dot--yellow { background: #eab308; }
+.hack-dot--green { background: #22c55e; }
+
+.hack-title {
+  margin-left: 8px;
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  color: #666;
+}
+
+.hack-body {
+  padding: 16px;
+  overflow-y: auto;
+  flex: 1;
+  font-family: 'Courier New', monospace;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.hack-line {
+  white-space: pre-wrap;
+  animation: hackFadeIn 0.1s ease-in;
+}
+
+.hack-cursor {
+  color: #4ade80;
+  animation: blink 0.6s step-end infinite;
+}
+
+@keyframes hackFadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes blink {
+  50% { opacity: 0; }
+}
+
+/* ── Food Fight Game ── */
+.foodfight-canvas {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  width: 100vw;
+  height: 100vh;
+  cursor: crosshair;
 }
 
 @keyframes spin { to { transform: rotate(360deg); } }
