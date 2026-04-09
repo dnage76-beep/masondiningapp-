@@ -39,7 +39,7 @@ def send_daily_email(emails: list, data: dict | None = None) -> None:
     recommendation = generate_recommendation(data["menus"])
     html_body = generate_email_body(data["menus"], recommendation, data["date"])
 
-    subject = f"⭐ GMU Dining Pick — {data['date']}"
+    subject = f"GMU Dining -- {data['date']}"
     full_html = f"<html><body>{html_body}</body></html>"
 
     try:
