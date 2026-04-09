@@ -704,6 +704,29 @@ function processCommand(cmd, menuData) {
         ];
     }
 
+    if (c === 'snead') {
+        const poems = [
+            ['There once was a man named McSnead,','Who planted a curious seed.','It grew overnight,','To a terrible height,','And now the whole farm\'s gone to weed.'],
+            ['There once was a man named McSnead,','Who raised every animal breed.','The cows learned to talk,','The chickens could walk,','And the pigs started learning to read.'],
+            ['There once was a man named McSnead,','Who did one very generous deed.','He opened his gate,','Said "dinner at eight,"','And the whole town showed up just to feed.'],
+            ['There once was a man named McSnead,','Who rode on his tractor at speed.','He flew off the seat,','Landed square on his feet,','And said "that\'s how we do it, indeed."'],
+            ['There once was a man named McSnead,','Whose scarecrow the birds wouldn\'t heed.','They nested on top,','Ate every last crop,','And McSnead had to start with new seed.'],
+            ['There once was a man named McSnead,','Who followed the farmer\'s old creed.','Wake up before dawn,','Complain on the lawn,','Then nap in the barn guaranteed.'],
+            ['There once was a man named McSnead,','Who tried to grow corn out of greed.','It grew ten feet tall,','Then crushed half the wall,','And his barn was demolished for free.'],
+            ['There once was a man named McSnead,','Who gave every visitor mead.','They stumbled around,','Fell flat on the ground,','And blamed it on fresh country air, agreed.'],
+            ['There once was a man named McSnead,','Whose goat ate the newspaper to read.','It burped out the news,','Reviewed all the views,','And became the town\'s journalist lead.'],
+            ['There once was a man named McSnead,','Who yodeled to gather his steed.','The horse ran away,','The donkey said neigh,','And only the rooster paid heed.'],
+        ];
+        const poem = poems[Math.floor(Math.random() * poems.length)];
+        return [
+            { text: '' },
+            { text: '=== THE BALLAD OF McSNEAD ===', color: '#eab308' },
+            { text: '' },
+            ...poem.map(line => ({ text: line, color: '#ccc' })),
+            { text: '' },
+        ];
+    }
+
     if (c === 'foodfight') return '__FOODFIGHT__';
 
     if (c === 'exit' || c === 'quit' || c === 'q') return '__EXIT__';
