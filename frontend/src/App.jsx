@@ -82,6 +82,12 @@ const LATE_NIGHT_MESSAGES = [
     "Fun fact: Ike's ice cream machine is probably broken anyway.",
     "You're up late. The dining halls are not.",
     "Closed. Maybe check if Taco Bell on 123 is still open.",
+    "You could DoorDash. Your bank account says otherwise.",
+    "Late night Ike's ended hours ago. You missed your window.",
+    "The vending machines in the JC don't judge. Go there.",
+    "Imagine checking dining hall menus at this hour. Oh wait.",
+    "Your future self will thank you for just going to bed.",
+    "Nothing here but closed kitchens and bad decisions.",
 ];
 
 const DEEP_NIGHT_MESSAGES = [
@@ -92,11 +98,54 @@ const DEEP_NIGHT_MESSAGES = [
     "Even the raccoons on campus have gone to bed.",
     "Tomorrow's menu is up in a few hours. Just wait.",
     "You know what pairs well with 3am? Sleep.",
+    "Breakfast is in like 4 hours. Hang in there champ.",
+    "This app cannot help you right now. Nothing can.",
+    "Go drink some water and go to bed.",
+    "The dining halls forgot you exist at this hour.",
 ];
 
 const WEEKEND_MORNING = [
     "Weekend brunch doesn't start until 11. Go back to sleep.",
     "Nothing's open yet. It's the weekend.",
+];
+
+// Daytime messages -- random flavor every time you open the app
+const DAYTIME_MESSAGES = [
+    "Ike's line is probably 20 minutes right now. Just a guess.",
+    "Plot twist: it's chicken tenders again.",
+    "Southside stir-fry hits different when you're desperate.",
+    "You could cook at home. But you won't.",
+    "Today's forecast: mid food with a chance of mediocrity.",
+    "The Globe is underrated and I will die on this hill.",
+    "Reminder: the waffle maker at Ike's has never been cleaned.",
+    "POV: you're about to eat the same thing you ate yesterday.",
+    "Fun fact: nobody has ever finished a meal at Southside and said 'wow'.",
+    "The soup is always there for you. Even when no one else is.",
+    "If Ike's Heart of the House is 'carved entree' again I'm transferring.",
+    "Dining dollars are just Monopoly money with extra steps.",
+    "You didn't come here for a five star meal. Lower those expectations.",
+    "Patriot Pit burgers carry this university on their back.",
+    "The salad bar exists. You will ignore it. As always.",
+    "Somewhere, a Southside worker is refilling the ranch for the 40th time.",
+    "This app was made by a guy who got tired of walking to check menus.",
+    "Ike's at 12:15 on a Tuesday? Good luck finding a seat.",
+    "Hot take: Globe soup is the best item in any dining hall.",
+    "You're about to eat. Try to enjoy it. Or at least survive it.",
+    "The dining hall doesn't care about your macros. But we do.",
+    "Every day I wake up and wonder what Southside will disappoint me with.",
+    "Ike's Flips is just a Wendy's that went to college.",
+    "You know it's bad when you're excited about the soup.",
+    "May your chicken not be dry today. Godspeed.",
+    "Broke: eating at Ike's. Woke: eating at the Globe. Bespoke: stealing fruit.",
+    "Today's special: whatever was left over from yesterday.",
+    "The stir-fry bar is a choose-your-own-adventure with no good endings.",
+    "This is your sign to try something new. Or just get chicken tenders.",
+    "Bold of you to assume the menu is accurate.",
+    "It's giving... dining hall.",
+    "Ike's Heart of the House is the main character. Everyone else is a side quest.",
+    "If you see 'carved entree' just know that could mean anything.",
+    "The dining halls have food. That's the nicest thing I can say.",
+    "We scraped this data from the dining website so you don't have to walk there and be disappointed in person.",
 ];
 
 // GMU 2025-2026 academic calendar approximate dates
@@ -162,7 +211,9 @@ function getVibeMessage() {
     // Finals week message
     if (special?.type === 'finals') return { text: special.msg, type: 'finals' };
 
-    return null;
+    // Normal daytime -- always show something funny
+    const msg = DAYTIME_MESSAGES[Math.floor(Math.random() * DAYTIME_MESSAGES.length)];
+    return { text: msg, type: 'vibe' };
 }
 
 // Get calories from nutrients array
