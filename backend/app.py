@@ -20,17 +20,17 @@ load_dotenv()
 from scraper import fetch_menus
 from recommender import generate_recommendation
 
-# ── Menu cache (avoid hammering DineOnCampus API) ───────────────────────────
-_menu_cache = {"data": None, "time": 0}
-CACHE_TTL = 300  # 5 minutes
+# ── Menu cache (scrape once per day) ─────────────────────────────────────────
+_menu_cache = {"data": None, "date": None}
 
 def get_menus_cached():
-    now = time.time()
-    if _menu_cache["data"] and (now - _menu_cache["time"]) < CACHE_TTL:
+    from datetime import date
+    today = date.today().isoformat()
+    if _menu_cache["data"] and _menu_cache["date"] == today:
         return _menu_cache["data"]
     data = fetch_menus()
     _menu_cache["data"] = data
-    _menu_cache["time"] = now
+    _menu_cache["date"] = today
     return data
 
 # ── App setup ────────────────────────────────────────────────────────────────
