@@ -12,12 +12,26 @@ from flask import Flask, jsonify, request
 from flask_cors import CORS
 import json
 import os
+import time
 from dotenv import load_dotenv
 
 load_dotenv()
 
 from scraper import fetch_menus
 from recommender import generate_recommendation
+
+# ── Menu cache (avoid hammering DineOnCampus API) ───────────────────────────
+_menu_cache = {"data": None, "time": 0}
+CACHE_TTL = 300  # 5 minutes
+
+def get_menus_cached():
+    now = time.time()
+    if _menu_cache["data"] and (now - _menu_cache["time"]) < CACHE_TTL:
+        return _menu_cache["data"]
+    data = fetch_menus()
+    _menu_cache["data"] = data
+    _menu_cache["time"] = now
+    return data
 
 # ── App setup ────────────────────────────────────────────────────────────────
 
@@ -58,8 +72,7 @@ def save_emails(emails: list) -> None:
 @app.route("/api/menus", methods=["GET"])
 def api_menus():
     try:
-        data = fetch_menus()
-        # Create final response object
+        data = get_menus_cached()
         response_data = {
             "date": data.get("date"),
             "menus": data.get("menus", {}),
@@ -67,7 +80,6 @@ def api_menus():
         }
         response_data["recommendation"] = generate_recommendation(data.get("menus", {}))
         return jsonify(response_data)
-        return jsonify(data)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -123,7 +135,7 @@ def api_send_test_email():
         return jsonify({"error": "Mailing list is empty — add emails first."}), 400
 
     try:
-        data = fetch_menus()
+        data = get_menus_cached()
         recommendation = generate_recommendation(data["menus"])
         m_module.send_daily_email(emails, data)
         return jsonify({
