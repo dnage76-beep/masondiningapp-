@@ -236,23 +236,33 @@ h1, h2, h3 { margin: 0; font-weight: 600; }
 
 .spinning { animation: spin 0.7s linear infinite; }
 
-.period-toggle {
-  background: none;
+/* ── Period Selector ── */
+.period-selector {
+  display: flex;
   border: 1px solid var(--border);
-  color: var(--text-2);
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+.period-btn {
+  background: none;
+  border: none;
+  border-right: 1px solid var(--border);
+  color: var(--text-3);
   font-size: 0.72rem;
   font-weight: 500;
   font-family: inherit;
-  padding: 0.25rem 0.6rem;
-  border-radius: 4px;
+  padding: 0.25rem 0.55rem;
   cursor: pointer;
+  transition: color 0.15s, background 0.15s;
 }
 
-.period-toggle:hover { color: var(--text); border-color: #444; }
+.period-btn:last-child { border-right: none; }
+.period-btn:hover { color: var(--text); background: var(--bg-hover); }
 
-.period-toggle--active {
+.period-btn--active {
   color: var(--text);
-  border-color: #555;
+  background: var(--bg-hover);
 }
 
 /* ── Hall Grid ── */
@@ -455,4 +465,6 @@ h1, h2, h3 { margin: 0; font-weight: 600; }
   .header-left { width: 100%; justify-content: space-between; }
   .hall-grid { grid-template-columns: 1fr; }
   .toolbar { flex-wrap: wrap; }
+  .period-selector { width: 100%; }
+  .period-btn { flex: 1; text-align: center; }
 }

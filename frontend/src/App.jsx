@@ -406,7 +406,7 @@ export default function App() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [refreshing, setRefreshing] = useState(false);
-    const [showAllPeriods, setShowAllPeriods] = useState(false);
+    const [selectedPeriod, setSelectedPeriod] = useState(() => getCurrentPeriod());
     const [logoClicks, setLogoClicks] = useState(0);
     const [konamiActive, setKonamiActive] = useState(false);
     const [vibe] = useState(() => getVibeMessage());
@@ -429,20 +429,21 @@ export default function App() {
 
     useEffect(() => { loadMenus(); }, []);
 
-    const activePeriod = getCurrentPeriod();
-
-    // Build a compact view: for each hall, show only the active period's items
+    // Build a compact view: for each hall, show only the selected period's items
     const renderHallCard = (hallName, periods, index) => {
-        // Decide which periods to show
-        const periodsToShow = showAllPeriods
-            ? Object.keys(periods).sort((a, b) => (a === 'Lunch' ? -1 : 1))
-            : [activePeriod];
+        const showAll = selectedPeriod === 'All';
+        const periodsToShow = showAll
+            ? Object.keys(periods).sort((a, b) => {
+                const order = { Breakfast: 0, Lunch: 1, Dinner: 2 };
+                return (order[a] ?? 9) - (order[b] ?? 9);
+            })
+            : [selectedPeriod];
 
         const hasAnyData = periodsToShow.some(p => (periods[p] || []).length > 0);
 
-        // Fallback: if the active period has no data, show whatever is available
+        // Fallback: if the selected period has no data, show whatever is available
         let fallbackPeriod = null;
-        if (!hasAnyData && !showAllPeriods) {
+        if (!hasAnyData && !showAll) {
             fallbackPeriod = Object.keys(periods).find(p => (periods[p] || []).length > 0);
         }
 
@@ -466,7 +467,7 @@ export default function App() {
 
                     return (
                         <div key={periodName} className="period-block">
-                            {(showAllPeriods || fallbackPeriod) && (
+                            {(showAll || fallbackPeriod) && (
                                 <div className="period-label">
                                     <Clock size={11} />
                                     <span>{periodName}</span>
@@ -547,13 +548,16 @@ export default function App() {
                                     <RefreshCw size={14} className={refreshing ? 'spinning' : ''} />
                                 </button>
                             </div>
-                            <div className="toolbar-right">
-                                <button
-                                    className={`period-toggle${showAllPeriods ? ' period-toggle--active' : ''}`}
-                                    onClick={() => setShowAllPeriods(!showAllPeriods)}
-                                >
-                                    {showAllPeriods ? 'All meals' : activePeriod + ' only'}
-                                </button>
+                            <div className="period-selector">
+                                {['Breakfast', 'Lunch', 'Dinner', 'All'].map(p => (
+                                    <button
+                                        key={p}
+                                        className={`period-btn${selectedPeriod === p ? ' period-btn--active' : ''}`}
+                                        onClick={() => setSelectedPeriod(p)}
+                                    >
+                                        {p}
+                                    </button>
+                                ))}
                             </div>
                         </div>
 
