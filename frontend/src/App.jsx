@@ -377,7 +377,7 @@ function FoodItem({ item }) {
         <div className="food-row">
             <span className="food-name">{formatName(item.name)}</span>
             <span className="food-meta">
-                {protein && <span className="food-protein">{protein}g</span>}
+                {protein && <span className="food-protein">{protein}g protein</span>}
                 {cal && <span className="food-cal">{cal}</span>}
             </span>
         </div>
