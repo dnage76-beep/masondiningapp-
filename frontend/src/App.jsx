@@ -67,6 +67,13 @@ function cleanStationName(name) {
 }
 
 // Format date nicely
+function isWeekend(dateStr) {
+    if (!dateStr) return false;
+    const [y, m, d] = dateStr.split('-').map(Number);
+    const day = new Date(y, m - 1, d).getDay();
+    return day === 0 || day === 6;
+}
+
 function formatDate(dateStr) {
     if (!dateStr) return '';
     const [y, m, d] = dateStr.split('-').map(Number);
@@ -1197,7 +1204,11 @@ export default function App() {
                 })}
 
                 {totalItems === 0 && (
-                    <p className="empty-msg">No menu posted yet.</p>
+                    <p className="empty-msg">
+                        {hallName === 'The Globe' && isWeekend(menuData?.date)
+                            ? 'Closed on weekends for some reason.'
+                            : 'No menu posted yet.'}
+                    </p>
                 )}
             </div>
         );
