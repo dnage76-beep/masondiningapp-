@@ -20,17 +20,50 @@ load_dotenv()
 from scraper import fetch_menus
 from recommender import generate_recommendation
 
-# ── Menu cache (scrape once per day) ─────────────────────────────────────────
-_menu_cache = {"data": None, "date": None}
+# ── Menu cache (scrape once per day, re-fetch if any hall/period is empty) ────
+_menu_cache = {"data": None, "date": None, "complete": False, "fetched_at": 0}
+_INCOMPLETE_RETRY_SECONDS = 300
+
+def _hall_has_items(periods: dict) -> bool:
+    for stations in periods.values():
+        if any(station.get("items") for station in stations):
+            return True
+    return False
+
+
+def _is_complete(data: dict) -> bool:
+    """True when the scrape did not fail and at least two halls posted items.
+
+    A hall with no periods is closed for the day (The Globe on weekends).
+    A hall that posted periods but no items is an incomplete scrape, so the
+    cache is not kept.
+    """
+    if data.get("errors"):
+        return False
+    menus = data.get("menus") or {}
+    halls_with_items = 0
+    for periods in menus.values():
+        if not periods:
+            continue
+        if not _hall_has_items(periods):
+            return False
+        halls_with_items += 1
+    return halls_with_items >= 2
 
 def get_menus_cached():
-    from datetime import date
-    today = date.today().isoformat()
-    if _menu_cache["data"] and _menu_cache["date"] == today:
+    from datetime import datetime
+    from zoneinfo import ZoneInfo
+    today = datetime.now(ZoneInfo("America/New_York")).date().isoformat()
+    fresh = _menu_cache["date"] == today and _menu_cache["data"]
+    if fresh and _menu_cache["complete"]:
+        return _menu_cache["data"]
+    if fresh and time.time() - _menu_cache["fetched_at"] < _INCOMPLETE_RETRY_SECONDS:
         return _menu_cache["data"]
     data = fetch_menus()
     _menu_cache["data"] = data
     _menu_cache["date"] = today
+    _menu_cache["complete"] = _is_complete(data)
+    _menu_cache["fetched_at"] = time.time()
     return data
 
 # ── App setup ────────────────────────────────────────────────────────────────

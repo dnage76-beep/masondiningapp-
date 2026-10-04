@@ -1,6 +1,7 @@
 from curl_cffi import requests
 import datetime
 import traceback
+from zoneinfo import ZoneInfo
 
 LOCATION_IDS = {
     "Southside": "686ff8fb72f475652f1c0bd2",
@@ -8,7 +9,7 @@ LOCATION_IDS = {
     "The Globe": "6830aa6ae001e14357502486",
 }
 
-ALLOWED_MEALS = {"Lunch", "Dinner"}
+ALLOWED_MEALS = {"Breakfast", "Brunch", "Lunch", "Dinner", "Late Night"}
 
 # Per-hall whitelist -- only stations whose name contains one of these keywords
 # (case-insensitive) will be included in the results.
@@ -32,7 +33,7 @@ def fetch_menus() -> dict:
     returning only the highlighted protein stations per hall.
     Returns {"date": "YYYY-MM-DD", "menus": {hall: {period: [categories]}}, "errors": []}
     """
-    today = datetime.date.today().strftime("%Y-%m-%d")
+    today = datetime.datetime.now(ZoneInfo("America/New_York")).date().isoformat()
     results = {}
     errors = []
 
@@ -40,11 +41,12 @@ def fetch_menus() -> dict:
         results[name] = {}
         try:
             periods_url = (
-                f"https://apiv4.dineoncampus.com/locations/{loc_id}/periods/?date={today}"
+                f"https://apiv4.dineoncampus.com/locations/{loc_id}/periods"
+                f"?platform=0&date={today}"
             )
             res = requests.get(periods_url, impersonate="chrome110", timeout=15)
             if res.status_code != 200:
-                errors.append(f"{name} periods HTTP {res.status_code}: {res.text[:100]}")
+                errors.append(f"{name} periods HTTP {res.status_code}")
                 continue
 
             periods = res.json().get("periods", [])
@@ -62,6 +64,7 @@ def fetch_menus() -> dict:
                 )
                 m_res = requests.get(menu_url, impersonate="chrome110", timeout=15)
                 if m_res.status_code != 200:
+                    errors.append(f"{name} {period_name} HTTP {m_res.status_code}")
                     continue
 
                 # API returns: {period: {id, name, categories: [...]}}
@@ -70,12 +73,14 @@ def fetch_menus() -> dict:
                 kept = [
                     cat for cat in categories
                     if is_allowed_station(name, cat.get("name", ""))
+                    and cat.get("items")
                 ]
                 print(f"[scraper] {name}/{period_name}: {len(categories)} stations → kept {len(kept)}")
                 results[name].update({period_name: kept})
 
-        except Exception:
+        except Exception as exc:
+            errors.append(f"{name}: {exc.__class__.__name__}")
             print(f"[scraper] Error fetching {name}:")
             traceback.print_exc()
 
-    return {"date": today, "menus": results}
+    return {"date": today, "menus": results, "errors": errors}

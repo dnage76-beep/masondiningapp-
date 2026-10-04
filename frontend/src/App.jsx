@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { Clock, Calendar, RefreshCw, Utensils, Mail } from 'lucide-react';
 
 const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:5001';
+const MENU_API_BASE = import.meta.env.VITE_MENU_API_URL ?? (import.meta.env.PROD ? '' : API_BASE);
 
 // Items that are just condiments/garnishes -- not worth showing
 const BORING_ITEMS = new Set([
@@ -152,7 +153,6 @@ const DAYTIME_MESSAGES = [
 function getSpecialEvent(now) {
     const m = now.getMonth(); // 0-indexed
     const d = now.getDate();
-    const day = now.getDay(); // 0=Sun
 
     // Winter break (mid Dec - mid Jan)
     if ((m === 11 && d >= 14) || (m === 0 && d <= 12))
@@ -1119,7 +1119,7 @@ export default function App() {
         if (isRefresh) setRefreshing(true);
         else { setLoading(true); setError(null); }
 
-        fetch(`${API_BASE}/api/menus`)
+        fetch(`${MENU_API_BASE}/api/menus`)
             .then((res) => {
                 if (!res.ok) throw new Error(`Server error: ${res.status}`);
                 return res.json();
@@ -1132,11 +1132,11 @@ export default function App() {
     useEffect(() => { loadMenus(); }, []);
 
     // Build a compact view: for each hall, show only the selected period's items
-    const renderHallCard = (hallName, periods, index) => {
+    const renderHallCard = (hallName, periods) => {
         const showAll = selectedPeriod === 'All';
         const periodsToShow = showAll
             ? Object.keys(periods).sort((a, b) => {
-                const order = { Breakfast: 0, Lunch: 1, Dinner: 2 };
+                const order = { Breakfast: 0, Brunch: 1, Lunch: 2, Dinner: 3, 'Late Night': 4 };
                 return (order[a] ?? 9) - (order[b] ?? 9);
             })
             : [selectedPeriod];
@@ -1273,8 +1273,8 @@ export default function App() {
                         </div>
 
                         <div className="hall-grid">
-                            {Object.entries(menuData?.menus ?? {}).map(([hall, periods], i) =>
-                                renderHallCard(hall, periods, i)
+                            {Object.entries(menuData?.menus ?? {}).map(([hall, periods]) =>
+                                renderHallCard(hall, periods)
                             )}
                         </div>
                     </>
