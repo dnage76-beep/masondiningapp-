@@ -10,6 +10,8 @@ LOCATION_IDS = {
 }
 
 ALLOWED_MEALS = {"Breakfast", "Brunch", "Lunch", "Dinner", "Late Night"}
+# The Oracle host is blocked by DineOnCampus. This endpoint runs on Vercel Edge, which is not.
+FALLBACK_MENU_URL = "https://masondiningapp.vercel.app/api/menus"
 
 # Per-hall whitelist -- only stations whose name contains one of these keywords
 # (case-insensitive) will be included in the results.
@@ -83,4 +85,64 @@ def fetch_menus() -> dict:
             print(f"[scraper] Error fetching {name}:")
             traceback.print_exc()
 
+    # curl_cffi from a residential IP currently gets a decoy menu (national-brand
+    # items filed under dining-hall stations). Datacenter IPs get HTTP 403.
+    # The Vercel Edge function receives the real menu.
+    if _item_count(results) == 0 or _looks_decoy(results):
+        fallback = _fetch_fallback(today)
+        if fallback:
+            print("[scraper] used Vercel edge menu fallback")
+            return fallback
+
     return {"date": today, "menus": results, "errors": errors}
+
+
+_DECOY_MARKERS = (
+    "chick-fil-a",
+    "frappuccino",
+    "pike place",
+    "starbucks",
+    "icedream",
+    "grande",
+    "macchiato",
+    "waffle potato",
+)
+
+
+def _looks_decoy(results: dict) -> bool:
+    names = []
+    for periods in results.values():
+        for stations in periods.values():
+            for station in stations:
+                for item in station.get("items") or []:
+                    names.append((item.get("name") or "").lower())
+    if len(names) < 8:
+        return False
+    hits = sum(any(marker in name for marker in _DECOY_MARKERS) for name in names)
+    return hits / len(names) > 0.25
+
+
+def _item_count(results: dict) -> int:
+    total = 0
+    for periods in results.values():
+        for stations in periods.values():
+            for station in stations:
+                total += len(station.get("items") or [])
+    return total
+
+
+def _fetch_fallback(today: str) -> dict | None:
+    try:
+        res = requests.get(FALLBACK_MENU_URL, timeout=25)
+    except Exception:
+        print("[scraper] Vercel fallback request failed")
+        traceback.print_exc()
+        return None
+    if res.status_code != 200:
+        print(f"[scraper] Vercel fallback HTTP {res.status_code}")
+        return None
+    data = res.json()
+    menus = data.get("menus") or {}
+    if _item_count(menus) == 0:
+        return None
+    return {"date": data.get("date") or today, "menus": menus, "errors": []}

@@ -1,4 +1,5 @@
-import { Impit } from 'impit';
+// Cloudflare blocks this function on Vercel's Node runtime. The Edge runtime can reach DineOnCampus.
+export const config = { runtime: 'edge' };
 
 const LOCATIONS = {
   Southside: '686ff8fb72f475652f1c0bd2',
@@ -18,8 +19,9 @@ const UPSTREAM_BASE = 'https://apiv4.dineoncampus.com';
 const UPSTREAM_HEADERS = {
   accept: 'application/json',
   'accept-language': 'en-US,en;q=0.9',
+  'user-agent':
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
 };
-const upstream = new Impit({ browser: 'chrome' });
 
 export function getEasternDate(now = new Date()) {
   const parts = new Intl.DateTimeFormat('en-US', {
@@ -60,9 +62,9 @@ export function compactStations(hallName, stations) {
 }
 
 async function fetchJson(url) {
-  const response = await upstream.fetch(url, {
+  const response = await fetch(url, {
     headers: UPSTREAM_HEADERS,
-    timeout: 15_000,
+    signal: AbortSignal.timeout(15_000),
   });
 
   if (!response.ok) {
@@ -122,24 +124,33 @@ function hasMenuItems(menus) {
   );
 }
 
-export default async function handler(_request, response) {
+function jsonResponse(body, status, cacheControl) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: {
+      'content-type': 'application/json',
+      'cache-control': cacheControl,
+    },
+  });
+}
+
+export default async function handler() {
   const date = getEasternDate();
   const payload = await fetchMenus(date);
 
   if (!hasMenuItems(payload.menus)) {
-    response.setHeader('Cache-Control', 'no-store');
-    response.status(502).json({
-      ...payload,
-      error: 'DineOnCampus did not return any menu items.',
-    });
-    return;
+    return jsonResponse(
+      { ...payload, error: 'DineOnCampus did not return any menu items.' },
+      502,
+      'no-store',
+    );
   }
 
-  response.setHeader(
-    'Cache-Control',
+  return jsonResponse(
+    payload,
+    200,
     payload.errors.length === 0
       ? 's-maxage=900, stale-while-revalidate=3600'
       : 'no-store',
   );
-  response.status(200).json(payload);
 }
