@@ -97,6 +97,13 @@ const LATE_NIGHT_MESSAGES = [
     "Imagine checking dining hall menus at this hour. Oh wait.",
     "Your future self will thank you for just going to bed.",
     "Nothing here but closed kitchens and bad decisions.",
+    "The Starship robots are off duty. Even they have boundaries.",
+    "Your 8am is closer than you think. Just saying.",
+    "The dining halls close. The microwave in your dorm never does.",
+    "Fenwick is open later than any dining hall. Coincidence? No.",
+    "At this hour the only menu item is regret, served cold.",
+    "Bold move checking a dining app at night. Bolder move: sleeping.",
+    "The kitchens are dark. The fridge light is calling your name.",
 ];
 
 const DEEP_NIGHT_MESSAGES = [
@@ -111,11 +118,19 @@ const DEEP_NIGHT_MESSAGES = [
     "This app cannot help you right now. Nothing can.",
     "Go drink some water and go to bed.",
     "The dining halls forgot you exist at this hour.",
+    "You're not hungry. You're sleep-deprived and bored. Close the app.",
+    "The menus will still be mid in the morning. Promise.",
+    "3am snack options: vending machine, regret, or both.",
+    "Somewhere a goose at Mason Pond is asleep. Be like the goose.",
+    "If you're up this late for an essay, write it about how sleepy you are.",
 ];
 
 const WEEKEND_MORNING = [
     "Weekend brunch doesn't start until 11. Go back to sleep.",
     "Nothing's open yet. It's the weekend.",
+    "Brunch is just breakfast that slept in. Same as you.",
+    "Weekend mornings at Mason: closed kitchens and open regrets.",
+    "Go back to bed. The eggs will be here at 11. Probably.",
 ];
 
 // Daytime messages -- random flavor every time you open the app
@@ -155,6 +170,41 @@ const DAYTIME_MESSAGES = [
     "If you see 'carved entree' just know that could mean anything.",
     "The dining halls have food. That's the nicest thing I can say.",
     "We scraped this data from the dining website so you don't have to walk there and be disappointed in person.",
+    "The Starship robots eat better than you. They run on electricity and spite.",
+    "Ike's line is the only thing at Mason that's guaranteed to be full.",
+    "Somewhere on campus, someone is eating cereal for dinner and thriving.",
+    "Your meal swipes are a resource. Spend them like it's the end of the semester.",
+    "Stir-fry tip: if you put enough sauce on it, it's technically a new dish.",
+    "The Globe: where 'international cuisine' means the chicken has a passport.",
+    "Southside's fries are undefeated. Everything else is a coin flip.",
+    "Every dining hall has one perfect item. Your job is to find it before graduation.",
+    "Remember: the soup of the day is just yesterday's soup with confidence.",
+    "Today's menu was chosen by a committee that has never met you.",
+    "Pro tip: walk in, do a lap, pretend to think, get chicken tenders.",
+    "The salad bar is there for the plot. Nobody is actually eating it.",
+    "Dining hall pizza is a social construct.",
+    "You're one grilled cheese away from being emotionally stable.",
+    "Life is short. Get the dessert first.",
+    "The JC food court is the ex you keep going back to.",
+    "Calories don't count if you eat them standing up next to the drink machine.",
+    "Nothing bonds strangers like a broken soft-serve machine.",
+    "A balanced meal is one plate in each hand.",
+    "Somebody, somewhere, just took the last cookie. It's personal.",
+    "Fun fact: 'Heart of the House' sounds romantic until you see the meatloaf.",
+    "Today's forecast: 70% chance of rice.",
+    "If the line is long, the food is good. If the line is short, run.",
+    "Don't let anyone tell you three bowls of cereal isn't dinner.",
+    "Patriot Pit: because the founding fathers would have wanted curly fries.",
+    "Eating alone at Southside is a power move. Own it.",
+    "Studies show 100% of students who check this app are hungry.",
+    "Mason traffic on 123 has more flavor than some of these entrees.",
+    "Ike's Late Night is where good decisions go to die. Worth it.",
+    "Plot armor: the waffle station. It survives every menu change.",
+    "If you get the 'Chef's Choice', you're trusting the chef more than your landlord.",
+    "Hydrate. The dining hall lemonade does not count as fruit.",
+    "Swipe in. Eat. Leave a little bit of your dignity at the dessert bar.",
+    "Tip: if it's labeled 'Medley', they're hiding something.",
+    "The real Mason Nation was the friends we made in the Ike's line.",
 ];
 
 // GMU 2025-2026 academic calendar approximate dates
