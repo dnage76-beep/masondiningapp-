@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Clock, Calendar, RefreshCw, Utensils, Mail, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Clock, Calendar, RefreshCw, Utensils, Mail, ChevronLeft, ChevronRight, Copy, Check } from 'lucide-react';
+import { copyImage, renderHallCardImage } from './cardImage.js';
 import { addDays, fetchMenusWithRetry, getEasternDate, readSavedMenus, saveMenus } from './menuClient.js';
 
 const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:5001';
@@ -80,6 +81,11 @@ function formatDate(dateStr) {
     const [y, m, d] = dateStr.split('-').map(Number);
     const date = new Date(y, m - 1, d);
     return date.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+}
+
+function formatShortDate(dateStr) {
+    const [y, m, d] = dateStr.split('-').map(Number);
+    return new Date(y, m - 1, d).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
 }
 
 // ── Easter eggs & contextual messages ───────────────────────
@@ -439,6 +445,41 @@ function FoodItem({ item }) {
                 {cal && <span className="food-cal">{cal}</span>}
             </span>
         </div>
+    );
+}
+
+function formatItemMeta(item) {
+    const protein = getProtein(item);
+    const cal = getCalories(item);
+    return [protein && `${protein}g protein`, cal && `${cal} cal`].filter(Boolean).join(' · ');
+}
+
+const COPY_LABELS = { copied: 'Copied!', shared: 'Shared', downloaded: 'Saved', failed: "Couldn't copy" };
+
+function CopyCardButton({ getCard, fileName }) {
+    const [status, setStatus] = useState(null);
+
+    const onClick = () => {
+        const blobPromise = renderHallCardImage(getCard());
+        copyImage(blobPromise, fileName)
+            .catch(() => 'failed')
+            .then((result) => {
+                if (result === 'cancelled') return;
+                setStatus(result);
+                setTimeout(() => setStatus(null), 2000);
+            });
+    };
+
+    return (
+        <button
+            className={`btn-icon copy-card-btn${status ? ' copy-card-btn--done' : ''}`}
+            onClick={onClick}
+            title="Copy as image"
+            aria-label="Copy as image"
+        >
+            {status && <span className="copy-card-label">{COPY_LABELS[status]}</span>}
+            {status && status !== 'failed' ? <Check size={14} /> : <Copy size={14} />}
+        </button>
     );
 }
 
@@ -1263,59 +1304,74 @@ export default function App() {
         }
 
         const finalPeriods = fallbackPeriod ? [fallbackPeriod] : periodsToShow;
+        const showPeriodLabels = showAll || Boolean(fallbackPeriod);
 
-        // Count total real items for this card
-        const totalItems = finalPeriods.reduce((acc, p) => {
-            return acc + (periods[p] || []).reduce((sum, station) =>
-                sum + (station.items || []).filter(i => !isBoring(i.name)).length, 0);
-        }, 0);
+        // Only the stations and items worth showing, shared by the card and its copied image
+        const sections = finalPeriods
+            .map(periodName => ({
+                periodName,
+                stations: (periods[periodName] || [])
+                    .map(station => ({
+                        key: station.name,
+                        name: cleanStationName(station.name),
+                        items: (station.items || []).filter(i => !isBoring(i.name)),
+                    }))
+                    .filter(station => station.name !== null && station.items.length > 0),
+            }))
+            .filter(section => section.stations.length > 0);
+
+        const emptyMessage = hallName === 'The Globe' && isWeekend(menuData?.date)
+            ? 'Closed on weekends for some reason.'
+            : 'No menu posted yet.';
+
+        const getCard = () => ({
+            hallName,
+            subtitle: [
+                formatShortDate(selectedDate),
+                showPeriodLabels ? null : finalPeriods[0],
+            ].filter(Boolean).join(' · '),
+            sections: sections.map(section => ({
+                label: showPeriodLabels ? section.periodName : null,
+                stations: section.stations.map(station => ({
+                    name: station.name,
+                    items: station.items.map(item => ({ name: formatName(item.name), meta: formatItemMeta(item) })),
+                })),
+            })),
+            emptyMessage,
+        });
 
         return (
             <div key={hallName} className="hall-card">
                 <div className="hall-header">
                     <h3 className="hall-name">{hallName}</h3>
+                    <CopyCardButton
+                        getCard={getCard}
+                        fileName={`${hallName.replace(/[^a-z0-9]+/gi, '-').toLowerCase()}-${selectedDate}.png`}
+                    />
                 </div>
 
-                {finalPeriods.map(periodName => {
-                    const stations = periods[periodName] || [];
-                    if (!stations.length) return null;
-
-                    return (
-                        <div key={periodName} className="period-block">
-                            {(showAll || fallbackPeriod) && (
-                                <div className="period-label">
-                                    <Clock size={11} />
-                                    <span>{periodName}</span>
+                {sections.map(section => (
+                    <div key={section.periodName} className="period-block">
+                        {showPeriodLabels && (
+                            <div className="period-label">
+                                <Clock size={11} />
+                                <span>{section.periodName}</span>
+                            </div>
+                        )}
+                        {section.stations.map(station => (
+                            <div key={station.key} className="station">
+                                <div className="station-label">{station.name}</div>
+                                <div className="station-items">
+                                    {station.items.map(item => (
+                                        <FoodItem key={item.name} item={item} />
+                                    ))}
                                 </div>
-                            )}
-                            {stations.map(station => {
-                                const stationName = cleanStationName(station.name);
-                                if (stationName === null) return null;
-                                const items = (station.items || []).filter(i => !isBoring(i.name));
-                                if (!items.length) return null;
+                            </div>
+                        ))}
+                    </div>
+                ))}
 
-                                return (
-                                    <div key={station.name} className="station">
-                                        <div className="station-label">{stationName}</div>
-                                        <div className="station-items">
-                                            {items.map(item => (
-                                                <FoodItem key={item.name} item={item} />
-                                            ))}
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    );
-                })}
-
-                {totalItems === 0 && (
-                    <p className="empty-msg">
-                        {hallName === 'The Globe' && isWeekend(menuData?.date)
-                            ? 'Closed on weekends for some reason.'
-                            : 'No menu posted yet.'}
-                    </p>
-                )}
+                {sections.length === 0 && <p className="empty-msg">{emptyMessage}</p>}
             </div>
         );
     };
