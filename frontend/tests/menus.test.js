@@ -5,6 +5,7 @@ import {
   compactStations,
   getEasternDate,
   isAllowedStation,
+  parseDateParam,
 } from '../api/menus.js';
 
 test('uses the Eastern calendar date near UTC midnight', () => {
@@ -27,7 +28,10 @@ test('drops unrelated and empty stations and compacts menu items', () => {
           name: 'Burger',
           calories: 450,
           ingredients: 'not sent to the browser',
-          nutrients: [{ name: 'Protein (g)', value: '25' }],
+          nutrients: [
+            { name: 'Protein (g)', value: '25', uom: 'g', valueNumeric: '25' },
+            { name: 'Sodium (mg)', value: '800' },
+          ],
         },
       ],
     },
@@ -45,4 +49,11 @@ test('drops unrelated and empty stations and compacts menu items', () => {
       ],
     },
   ]);
+});
+
+test('accepts real calendar dates and rejects anything else', () => {
+  assert.equal(parseDateParam('2026-10-15'), '2026-10-15');
+  assert.equal(parseDateParam('2026-02-30'), null);
+  assert.equal(parseDateParam('tomorrow'), null);
+  assert.equal(parseDateParam(null), null);
 });

@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Clock, Calendar, RefreshCw, Utensils, Mail } from 'lucide-react';
+import { Clock, Calendar, RefreshCw, Utensils, Mail, ChevronLeft, ChevronRight } from 'lucide-react';
+import { addDays, fetchMenusWithRetry, getEasternDate, readSavedMenus, saveMenus } from './menuClient.js';
 
 const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:5001';
 const MENU_API_BASE = import.meta.env.VITE_MENU_API_URL ?? (import.meta.env.PROD ? '' : API_BASE);
@@ -1109,11 +1110,23 @@ function FoodFight({ onDone, menuData }) {
 }
 
 // ── Main App ─────────────────────────────────────────────────
+// How far the day buttons can move from today
+const MAX_DAY_OFFSET = 7;
+
+function formatSavedTime(savedAt) {
+    if (!savedAt) return '';
+    return new Date(savedAt).toLocaleString('en-US', { weekday: 'short', hour: 'numeric', minute: '2-digit' });
+}
+
 export default function App() {
+    const [today, setToday] = useState(() => getEasternDate());
+    const [selectedDate, setSelectedDate] = useState(today);
     const [menuData, setMenuData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [refreshing, setRefreshing] = useState(false);
+    const [stale, setStale] = useState(false);
+    const requestIdRef = useRef(0);
     const [selectedPeriod, setSelectedPeriod] = useState(() => getCurrentPeriod());
     const [logoClicks, setLogoClicks] = useState(0);
     const [terminalOpen, setTerminalOpen] = useState(false);
@@ -1122,21 +1135,64 @@ export default function App() {
 
     useKonami(useCallback(() => setTerminalOpen(true), []));
 
-    const loadMenus = (isRefresh = false) => {
-        if (isRefresh) setRefreshing(true);
-        else { setLoading(true); setError(null); }
+    // Show the saved copy for the day right away, then refresh it from the network.
+    const loadMenus = useCallback((date) => {
+        const requestId = ++requestIdRef.current;
+        const saved = readSavedMenus(date);
+        setError(null);
+        setStale(false);
+        if (saved) {
+            setMenuData(saved);
+            setLoading(false);
+            setRefreshing(true);
+        } else {
+            setMenuData(null);
+            setLoading(true);
+        }
 
-        fetch(`${MENU_API_BASE}/api/menus`)
-            .then((res) => {
-                if (!res.ok) throw new Error(`Server error: ${res.status}`);
-                return res.json();
+        fetchMenusWithRetry(MENU_API_BASE, date)
+            .then((data) => {
+                if (requestId !== requestIdRef.current) return;
+                const stamped = { ...data, savedAt: Date.now() };
+                setMenuData(stamped);
+                saveMenus(stamped);
             })
-            .then(setMenuData)
-            .catch((err) => setError(err.message))
-            .finally(() => { setLoading(false); setRefreshing(false); });
-    };
+            .catch((err) => {
+                if (requestId !== requestIdRef.current) return;
+                if (saved) setStale(true);
+                else setError(err.message);
+            })
+            .finally(() => {
+                if (requestId !== requestIdRef.current) return;
+                setLoading(false);
+                setRefreshing(false);
+            });
+    }, []);
 
-    useEffect(() => { loadMenus(); }, []);
+    useEffect(() => { loadMenus(selectedDate); }, [selectedDate, loadMenus]);
+
+    // A phone keeps the app open in the background for days, so catch up when it comes back.
+    const hiddenAtRef = useRef(null);
+    useEffect(() => {
+        const onVisibility = () => {
+            if (document.visibilityState === 'hidden') {
+                hiddenAtRef.current = Date.now();
+                return;
+            }
+            const newToday = getEasternDate();
+            if (newToday !== today) {
+                setToday(newToday);
+                setSelectedDate(newToday);
+            } else if (hiddenAtRef.current && Date.now() - hiddenAtRef.current > 10 * 60_000) {
+                loadMenus(selectedDate);
+            }
+        };
+        document.addEventListener('visibilitychange', onVisibility);
+        return () => document.removeEventListener('visibilitychange', onVisibility);
+    }, [today, selectedDate, loadMenus]);
+
+    const dayOffset = Math.round((Date.parse(selectedDate) - Date.parse(today)) / 86_400_000);
+    const goToDay = (days) => setSelectedDate((date) => addDays(date, days));
 
     // Build a compact view: for each hall, show only the selected period's items
     const renderHallCard = (hallName, periods) => {
@@ -1242,53 +1298,81 @@ export default function App() {
                         {vibe.text}
                     </div>
                 )}
+                <div className="toolbar">
+                    <div className="toolbar-left">
+                        <button
+                            className="btn-icon day-btn"
+                            onClick={() => goToDay(-1)}
+                            disabled={dayOffset <= -MAX_DAY_OFFSET}
+                            title="Previous day"
+                            aria-label="Previous day"
+                        >
+                            <ChevronLeft size={16} />
+                        </button>
+                        <Calendar size={14} />
+                        <span className="toolbar-date">{formatDate(selectedDate)}</span>
+                        <button
+                            className="btn-icon day-btn"
+                            onClick={() => goToDay(1)}
+                            disabled={dayOffset >= MAX_DAY_OFFSET}
+                            title="Next day"
+                            aria-label="Next day"
+                        >
+                            <ChevronRight size={16} />
+                        </button>
+                        {dayOffset !== 0 && (
+                            <button className="today-btn" onClick={() => setSelectedDate(today)}>
+                                Today
+                            </button>
+                        )}
+                        <button
+                            className="btn-icon"
+                            onClick={() => loadMenus(selectedDate)}
+                            disabled={loading || refreshing}
+                            title="Refresh"
+                            aria-label="Refresh"
+                        >
+                            <RefreshCw size={14} className={refreshing ? 'spinning' : ''} />
+                        </button>
+                    </div>
+                    <div className="period-selector">
+                        {['Breakfast', 'Lunch', 'Dinner', 'All'].map(p => (
+                            <button
+                                key={p}
+                                className={`period-btn${selectedPeriod === p ? ' period-btn--active' : ''}`}
+                                onClick={() => setSelectedPeriod(p)}
+                            >
+                                {p}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
+                {stale && (
+                    <div className="stale-notice">
+                        Couldn't reach the server. Showing the menu saved {formatSavedTime(menuData?.savedAt)}.
+                    </div>
+                )}
+
                 {loading ? (
                     <div className="loading">
                         <div className="spinner" />
-                        <p>Loading today's menus...</p>
+                        <p>Loading menus...</p>
                     </div>
                 ) : error ? (
                     <div className="error-card">
                         <p className="error-text">Could not load menus</p>
                         <p className="error-detail">{error}</p>
-                        <button className="btn btn--primary" onClick={() => loadMenus()}>
+                        <button className="btn btn--primary" onClick={() => loadMenus(selectedDate)}>
                             <RefreshCw size={14} /> Retry
                         </button>
                     </div>
                 ) : (
-                    <>
-                        <div className="toolbar">
-                            <div className="toolbar-left">
-                                <Calendar size={14} />
-                                <span className="toolbar-date">{formatDate(menuData?.date)}</span>
-                                <button
-                                    className="btn-icon"
-                                    onClick={() => loadMenus(true)}
-                                    disabled={refreshing}
-                                    title="Refresh"
-                                >
-                                    <RefreshCw size={14} className={refreshing ? 'spinning' : ''} />
-                                </button>
-                            </div>
-                            <div className="period-selector">
-                                {['Breakfast', 'Lunch', 'Dinner', 'All'].map(p => (
-                                    <button
-                                        key={p}
-                                        className={`period-btn${selectedPeriod === p ? ' period-btn--active' : ''}`}
-                                        onClick={() => setSelectedPeriod(p)}
-                                    >
-                                        {p}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-
-                        <div className="hall-grid">
-                            {Object.entries(menuData?.menus ?? {}).map(([hall, periods]) =>
-                                renderHallCard(hall, periods)
-                            )}
-                        </div>
-                    </>
+                    <div className="hall-grid">
+                        {Object.entries(menuData?.menus ?? {}).map(([hall, periods]) =>
+                            renderHallCard(hall, periods)
+                        )}
+                    </div>
                 )}
             </main>
         </div>

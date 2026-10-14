@@ -236,6 +236,44 @@ h1, h2, h3 { margin: 0; font-weight: 600; }
 
 .spinning { animation: spin 0.7s linear infinite; }
 
+/* ── Day navigation ── */
+.day-btn {
+  color: var(--text-2);
+  padding: 0.3rem;
+  min-width: 28px;
+  min-height: 28px;
+  justify-content: center;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.day-btn:hover:not(:disabled) { background: var(--bg-hover); }
+
+.toolbar-date { min-width: 9.5rem; text-align: center; }
+
+.today-btn {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--blue);
+  font-size: 0.72rem;
+  font-family: inherit;
+  padding: 0.2rem 0.5rem;
+  cursor: pointer;
+}
+
+.today-btn:hover { background: var(--bg-hover); }
+
+.stale-notice {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text-2);
+  font-size: 0.78rem;
+  padding: 0.5rem 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
 /* ── Period Selector ── */
 .period-selector {
   display: flex;

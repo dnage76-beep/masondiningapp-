@@ -39,11 +39,23 @@ export function isAllowedStation(hallName, stationName) {
   return STATION_KEYWORDS[hallName].some((keyword) => normalized.includes(keyword));
 }
 
+// The app only shows calories and protein, so the other nutrients are dropped to keep the payload small.
+const KEPT_NUTRIENTS = new Set(['Calories', 'Protein (g)']);
+
+export function parseDateParam(value) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value ?? '')) return null;
+  const [y, m, d] = value.split('-').map(Number);
+  const date = new Date(Date.UTC(y, m - 1, d));
+  return date.getUTCMonth() === m - 1 && date.getUTCDate() === d ? value : null;
+}
+
 function compactItem(item) {
   return {
     name: item.name,
     calories: item.calories,
-    nutrients: item.nutrients,
+    nutrients: (item.nutrients ?? [])
+      .filter((nutrient) => KEPT_NUTRIENTS.has(nutrient.name))
+      .map(({ name, value }) => ({ name, value })),
   };
 }
 
@@ -61,10 +73,10 @@ export function compactStations(hallName, stations) {
     }));
 }
 
-async function fetchJson(url) {
+async function fetchJsonOnce(url) {
   const response = await fetch(url, {
     headers: UPSTREAM_HEADERS,
-    signal: AbortSignal.timeout(15_000),
+    signal: AbortSignal.timeout(10_000),
   });
 
   if (!response.ok) {
@@ -72,6 +84,14 @@ async function fetchJson(url) {
   }
 
   return response.json();
+}
+
+async function fetchJson(url) {
+  try {
+    return await fetchJsonOnce(url);
+  } catch {
+    return fetchJsonOnce(url);
+  }
 }
 
 async function fetchHall(hallName, locationId, date) {
@@ -134,8 +154,9 @@ function jsonResponse(body, status, cacheControl) {
   });
 }
 
-export default async function handler() {
-  const date = getEasternDate();
+export default async function handler(request) {
+  const requested = request ? new URL(request.url).searchParams.get('date') : null;
+  const date = parseDateParam(requested) ?? getEasternDate();
   const payload = await fetchMenus(date);
 
   if (!hasMenuItems(payload.menus)) {
